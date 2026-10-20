@@ -1,0 +1,2137 @@
+{
+  "name": "Basalam Product Research to Excel",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "تحقیق محصولات باسلام",
+        "formDescription": "با ارسال این فرم، دسته‌بندی‌های صفحه «خانه و آشپزخانه» باسلام به‌صورت زنده خوانده می‌شوند. سپس دسته و تعداد محصول را انتخاب می‌کنید و فایل اکسل تحویل داده می‌شود.",
+        "formFields": {
+          "values": [
+            {
+              "fieldType": "html",
+              "html": "<p dir=\"rtl\">Basalam product research → Excel. Click start to discover live categories from https://basalam.com/cat/home</p>"
+            }
+          ]
+        },
+        "responseMode": "lastNode",
+        "options": {
+          "buttonLabel": "شروع کشف دسته‌بندی‌ها",
+          "path": "basalam-product-research"
+        }
+      },
+      "id": "c0123365-e701-4feb-8737-19583ec965e4",
+      "name": "Start Research",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.6,
+      "position": [
+        0,
+        96
+      ],
+      "webhookId": "1a70e3e7-d978-4a25-b2c3-4c37eadd7281"
+    },
+    {
+      "parameters": {
+        "url": "https://basalam.com/cat/home",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (compatible; n8n-basalam-product-research/1.0)"
+            },
+            {
+              "name": "Accept-Language",
+              "value": "fa-IR,fa;q=0.9"
+            }
+          ]
+        },
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 1500
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "outputPropertyName": "html"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "16bf6938-4c65-4f04-9c6d-b1abfac7a7db",
+      "name": "Fetch Category Home",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        272,
+        224
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ---- helpers ----\n// shared helpers (inlined into each Code node by the generator)\nfunction bsNextData(h) {\n  var m = String(h || '').match(/<script id=\"__NEXT_DATA__\"[^>]*>([\\s\\S]*?)<\\/script>/);\n  if (!m) return null;\n  try { return JSON.parse(m[1]); } catch (e) { return null; }\n}\nfunction bsQuery(d, keyName) {\n  var ds = d && d.props && d.props.pageProps && d.props.pageProps.dehydratedState;\n  var list = (ds && ds.queries) || [];\n  for (var i = 0; i < list.length; i++) {\n    var q = list[i];\n    if (Array.isArray(q.queryKey) && q.queryKey[0] === keyName) return q.state ? q.state.data : null;\n  }\n  return null;\n}\nfunction bsNorm(s) {\n  var fa = '۰۱۲۳۴۵۶۷۸۹', ar = '٠١٢٣٤٥٦٧٨٩';\n  var out = '';\n  s = String(s == null ? '' : s);\n  for (var i = 0; i < s.length; i++) {\n    var c = s[i], k = fa.indexOf(c), j = ar.indexOf(c);\n    if (k >= 0) c = String(k); else if (j >= 0) c = String(j);\n    out += c;\n  }\n  return out.replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[\\u200c\\u200f\\u200e]/g, ' ').replace(/[،,]/g, ' ').replace(/\\s+/g, ' ').trim().toLowerCase();\n}\nfunction bsEsc(s) {\n  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\n}\n\n// ---- logic ----\nconst html = $input.first().json.html;\nconst d = bsNextData(html);\nconst data = d && bsQuery(d, 'category-search');\nif (!data || !data.details) {\n  throw new Error('Category discovery failed: could not read the embedded category data from https://basalam.com/cat/home. The page structure may have changed or access was blocked. Response error: ' + JSON.stringify($input.first().json.error || null));\n}\nconst det = data.details;\nconst root = { id: det.id, title: det.title, path: det.validUrl, level: det.level };\nconst subs = (data.subcategories || []).filter(function (s) { return s && s.validUrl && s.title; });\nif (!subs.length) throw new Error('Category discovery failed: no subcategories found on https://basalam.com/cat/home');\nreturn subs.map(function (s) {\n  return { json: { id: s.id, title: s.title, path: s.validUrl, fetchUrl: 'https://basalam.com' + encodeURI(s.validUrl), level: s.level, parentId: root.id, parentTitle: root.title, root: root } };\n});\n"
+      },
+      "id": "e34f44dc-6fc7-4f99-b920-d1d2c4cccf35",
+      "name": "Extract Main Categories",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        496,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.fetchUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (compatible; n8n-basalam-product-research/1.0)"
+            },
+            {
+              "name": "Accept-Language",
+              "value": "fa-IR,fa;q=0.9"
+            }
+          ]
+        },
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 1500
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "outputPropertyName": "html"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "74ebd33d-6271-4106-a7d4-eda96c259f7f",
+      "name": "Fetch Main Category Pages",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        720,
+        224
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ---- helpers ----\n// shared helpers (inlined into each Code node by the generator)\nfunction bsNextData(h) {\n  var m = String(h || '').match(/<script id=\"__NEXT_DATA__\"[^>]*>([\\s\\S]*?)<\\/script>/);\n  if (!m) return null;\n  try { return JSON.parse(m[1]); } catch (e) { return null; }\n}\nfunction bsQuery(d, keyName) {\n  var ds = d && d.props && d.props.pageProps && d.props.pageProps.dehydratedState;\n  var list = (ds && ds.queries) || [];\n  for (var i = 0; i < list.length; i++) {\n    var q = list[i];\n    if (Array.isArray(q.queryKey) && q.queryKey[0] === keyName) return q.state ? q.state.data : null;\n  }\n  return null;\n}\nfunction bsNorm(s) {\n  var fa = '۰۱۲۳۴۵۶۷۸۹', ar = '٠١٢٣٤٥٦٧٨٩';\n  var out = '';\n  s = String(s == null ? '' : s);\n  for (var i = 0; i < s.length; i++) {\n    var c = s[i], k = fa.indexOf(c), j = ar.indexOf(c);\n    if (k >= 0) c = String(k); else if (j >= 0) c = String(j);\n    out += c;\n  }\n  return out.replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[\\u200c\\u200f\\u200e]/g, ' ').replace(/[،,]/g, ' ').replace(/\\s+/g, ' ').trim().toLowerCase();\n}\nfunction bsEsc(s) {\n  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\n}\n\n// ---- logic ----\nconst mains = $('Extract Main Categories').all().map(function (i) { return i.json; });\nconst pages = $input.all();\nconst root = mains[0].root;\nconst cats = [];\nconst seen = {};\nconst warnings = [];\nfunction add(c) {\n  if (seen[c.id]) return;\n  seen[c.id] = true;\n  c.url = 'https://basalam.com' + c.path;\n  c.fetchUrl = 'https://basalam.com' + encodeURI(c.path);\n  cats.push(c);\n}\nadd({ id: root.id, title: root.title, path: root.path, level: root.level, parentId: 0, parentTitle: '', depth: 0 });\nmains.forEach(function (m, i) {\n  add({ id: m.id, title: m.title, path: m.path, level: m.level, parentId: root.id, parentTitle: root.title, depth: 1 });\n  const p = pages[i];\n  const d = bsNextData(p && p.json ? p.json.html : '');\n  const data = d && bsQuery(d, 'category-search');\n  if (!data) {\n    warnings.push('Subcategories of \"' + m.title + '\" could not be loaded (' + JSON.stringify((p && p.json && p.json.error) || 'no data') + ')');\n    return;\n  }\n  (data.subcategories || []).forEach(function (s) {\n    if (s && s.validUrl && s.title) add({ id: s.id, title: s.title, path: s.validUrl, level: s.level, parentId: m.id, parentTitle: m.title, depth: 2 });\n  });\n});\ncats.forEach(function (c, i) { c.number = i + 1; });\nreturn [{ json: { categories: cats, categoryCount: cats.length, warnings: warnings, discoveredAt: new Date().toISOString() } }];\n"
+      },
+      "id": "5961ff9b-51d7-4174-8885-0c6e94231396",
+      "name": "Build Category Tree",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        944,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ---- helpers ----\n// shared helpers (inlined into each Code node by the generator)\nfunction bsNextData(h) {\n  var m = String(h || '').match(/<script id=\"__NEXT_DATA__\"[^>]*>([\\s\\S]*?)<\\/script>/);\n  if (!m) return null;\n  try { return JSON.parse(m[1]); } catch (e) { return null; }\n}\nfunction bsQuery(d, keyName) {\n  var ds = d && d.props && d.props.pageProps && d.props.pageProps.dehydratedState;\n  var list = (ds && ds.queries) || [];\n  for (var i = 0; i < list.length; i++) {\n    var q = list[i];\n    if (Array.isArray(q.queryKey) && q.queryKey[0] === keyName) return q.state ? q.state.data : null;\n  }\n  return null;\n}\nfunction bsNorm(s) {\n  var fa = '۰۱۲۳۴۵۶۷۸۹', ar = '٠١٢٣٤٥٦٧٨٩';\n  var out = '';\n  s = String(s == null ? '' : s);\n  for (var i = 0; i < s.length; i++) {\n    var c = s[i], k = fa.indexOf(c), j = ar.indexOf(c);\n    if (k >= 0) c = String(k); else if (j >= 0) c = String(j);\n    out += c;\n  }\n  return out.replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[\\u200c\\u200f\\u200e]/g, ' ').replace(/[،,]/g, ' ').replace(/\\s+/g, ' ').trim().toLowerCase();\n}\nfunction bsEsc(s) {\n  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\n}\n\n// ---- logic ----\nconst tree = $('Build Category Tree').first().json;\nconst cur = $input.first().json || {};\nconst err = cur.selectionError || '';\nconst cands = cur.candidates || [];\nlet html = '<div dir=\"rtl\" style=\"text-align:right\">';\nif (err) html += '<p style=\"color:#b00020\"><b>' + bsEsc(err) + '</b></p>';\nif (cands.length) {\n  html += '<p><b>گزینه‌های مشابه:</b></p><ul>';\n  cands.forEach(function (c) { html += '<li>' + c.number + '. ' + bsEsc(c.title) + (c.parentTitle ? ' (زیرمجموعه ' + bsEsc(c.parentTitle) + ')' : '') + '</li>'; });\n  html += '</ul><hr>';\n}\nhtml += '<p>' + tree.categoryCount + ' دسته‌بندی از صفحه باسلام شناسایی شد:</p>';\ntree.categories.forEach(function (c) {\n  const pad = c.depth * 24;\n  const label = c.number + '. ' + bsEsc(c.title);\n  html += '<div style=\"padding-right:' + pad + 'px;margin:2px 0\">' + (c.depth < 2 ? '<b>' + label + '</b>' : '- ' + label) + '</div>';\n});\nif (tree.warnings && tree.warnings.length) html += '<p style=\"color:#8a6d3b\">' + bsEsc(tree.warnings.join(' | ')) + '</p>';\nhtml += '</div>';\nconst formFields = [\n  { fieldType: 'html', html: html },\n  {\n    fieldLabel: 'از کدام دسته یا زیرشاخه می‌خواهید محصولات جمع‌آوری شود؟ شماره یا نام آن را وارد کنید. (Which category or subcategory would you like to collect products from? Please enter its number or name.)',\n    fieldName: 'selection',\n    fieldType: 'text',\n    placeholder: 'مثلاً 5 یا لوازم آشپزخانه',\n    requiredField: true,\n  },\n];\nreturn [{ json: { formFields: formFields, attempt: (cur.attempt || 0) + 1 } }];\n"
+      },
+      "id": "dd742a46-3fba-43fe-86bd-149bc254b6bc",
+      "name": "Build Selection Page",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "defineForm": "json",
+        "jsonOutput": "={{ JSON.stringify($json.formFields) }}",
+        "options": {
+          "formTitle": "انتخاب دسته‌بندی",
+          "buttonLabel": "ادامه"
+        }
+      },
+      "id": "917cf2d7-547e-4792-85fe-5aac43a5d4d4",
+      "name": "Ask Category",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.5,
+      "position": [
+        1024,
+        304
+      ],
+      "webhookId": "fafaad7b-9e77-4f7b-a460-632bdaa9c8c9"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ---- helpers ----\n// shared helpers (inlined into each Code node by the generator)\nfunction bsNextData(h) {\n  var m = String(h || '').match(/<script id=\"__NEXT_DATA__\"[^>]*>([\\s\\S]*?)<\\/script>/);\n  if (!m) return null;\n  try { return JSON.parse(m[1]); } catch (e) { return null; }\n}\nfunction bsQuery(d, keyName) {\n  var ds = d && d.props && d.props.pageProps && d.props.pageProps.dehydratedState;\n  var list = (ds && ds.queries) || [];\n  for (var i = 0; i < list.length; i++) {\n    var q = list[i];\n    if (Array.isArray(q.queryKey) && q.queryKey[0] === keyName) return q.state ? q.state.data : null;\n  }\n  return null;\n}\nfunction bsNorm(s) {\n  var fa = '۰۱۲۳۴۵۶۷۸۹', ar = '٠١٢٣٤٥٦٧٨٩';\n  var out = '';\n  s = String(s == null ? '' : s);\n  for (var i = 0; i < s.length; i++) {\n    var c = s[i], k = fa.indexOf(c), j = ar.indexOf(c);\n    if (k >= 0) c = String(k); else if (j >= 0) c = String(j);\n    out += c;\n  }\n  return out.replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[\\u200c\\u200f\\u200e]/g, ' ').replace(/[،,]/g, ' ').replace(/\\s+/g, ' ').trim().toLowerCase();\n}\nfunction bsEsc(s) {\n  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\n}\n\n// ---- logic ----\nconst cats = $('Build Category Tree').first().json.categories;\n\nconst input = $input.first().json || {};\nlet raw = input.selection;\nif (raw === undefined) raw = Object.keys(input).map(function (k) { return input[k]; }).find(function (v) { return typeof v === 'string' && v.trim(); });\nraw = String(raw == null ? '' : raw).trim();\nconst q = bsNorm(raw);\nfunction pick(c) {\n  return { id: c.id, number: c.number, title: c.title, path: c.path, url: c.url, fetchUrl: c.fetchUrl, level: c.level, parentId: c.parentId, parentTitle: c.parentTitle, depth: c.depth };\n}\nfunction fail(msg, cands) {\n  return [{ json: { resolved: false, selectionError: msg, candidates: (cands || []).slice(0, 15).map(pick), lastInput: raw } }];\n}\nif (!q) return fail('ورودی خالی است. لطفاً شماره یا نام دسته را وارد کنید.');\nlet matches = [];\nif (/^\\d+$/.test(q)) {\n  const n = parseInt(q, 10);\n  const c = cats.find(function (x) { return x.number === n; });\n  if (!c) return fail('شماره «' + raw + '» در فهرست وجود ندارد. عددی بین 1 تا ' + cats.length + ' وارد کنید.');\n  matches = [c];\n} else {\n  const exact = cats.filter(function (c) { return bsNorm(c.title) === q; });\n  if (exact.length) matches = exact;\n  else {\n    const words = q.split(' ').filter(function (w) { return w.length > 1; });\n    matches = cats.filter(function (c) {\n      const t = bsNorm(c.title);\n      return t.indexOf(q) >= 0 || (words.length > 0 && words.every(function (w) { return t.indexOf(w) >= 0; }));\n    });\n  }\n}\nif (matches.length === 0) return fail('هیچ دسته‌ای با «' + raw + '» پیدا نشد. لطفاً شماره دسته را از فهرست وارد کنید.');\nif (matches.length > 1) return fail('عبارت «' + raw + '» با چند دسته مطابقت دارد. لطفاً شماره دقیق را وارد کنید.', matches);\nreturn [{ json: { resolved: true, selected: pick(matches[0]), lastInput: raw } }];\n"
+      },
+      "id": "91ac1b63-a032-4ae5-b2e6-79c76e0cd4a4",
+      "name": "Resolve Selection",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1248,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.resolved }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "7bcfa81a-1209-421c-bffe-a5daf49fd1c0",
+      "name": "Selection Resolved?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1472,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ JSON.stringify({ selected: $json.selected }) }}",
+        "options": {}
+      },
+      "id": "6635ccde-6a50-441c-931e-a2c30a763c24",
+      "name": "Current Category",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1696,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.selected.fetchUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (compatible; n8n-basalam-product-research/1.0)"
+            },
+            {
+              "name": "Accept-Language",
+              "value": "fa-IR,fa;q=0.9"
+            }
+          ]
+        },
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 1500
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "outputPropertyName": "html"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "f96d2629-d77a-421b-9d47-299038049fa6",
+      "name": "Fetch Selected Category",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1920,
+        304
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ---- helpers ----\n// shared helpers (inlined into each Code node by the generator)\nfunction bsNextData(h) {\n  var m = String(h || '').match(/<script id=\"__NEXT_DATA__\"[^>]*>([\\s\\S]*?)<\\/script>/);\n  if (!m) return null;\n  try { return JSON.parse(m[1]); } catch (e) { return null; }\n}\nfunction bsQuery(d, keyName) {\n  var ds = d && d.props && d.props.pageProps && d.props.pageProps.dehydratedState;\n  var list = (ds && ds.queries) || [];\n  for (var i = 0; i < list.length; i++) {\n    var q = list[i];\n    if (Array.isArray(q.queryKey) && q.queryKey[0] === keyName) return q.state ? q.state.data : null;\n  }\n  return null;\n}\nfunction bsNorm(s) {\n  var fa = '۰۱۲۳۴۵۶۷۸۹', ar = '٠١٢٣٤٥٦٧٨٩';\n  var out = '';\n  s = String(s == null ? '' : s);\n  for (var i = 0; i < s.length; i++) {\n    var c = s[i], k = fa.indexOf(c), j = ar.indexOf(c);\n    if (k >= 0) c = String(k); else if (j >= 0) c = String(j);\n    out += c;\n  }\n  return out.replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[\\u200c\\u200f\\u200e]/g, ' ').replace(/[،,]/g, ' ').replace(/\\s+/g, ' ').trim().toLowerCase();\n}\nfunction bsEsc(s) {\n  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\n}\n\n// ---- logic ----\nconst cur = $('Current Category').first().json.selected;\nconst resp = $input.first().json;\nconst d = bsNextData(resp.html);\nconst data = d && bsQuery(d, 'category-search');\nif (!data) {\n  throw new Error('Could not load the selected category page ' + cur.url + ' — ' + JSON.stringify(resp.error || 'no embedded data found'));\n}\nconst children = (data.subcategories || []).filter(function (s) { return s && s.validUrl && s.title; }).map(function (s) {\n  return { id: s.id, title: s.title, path: s.validUrl, url: 'https://basalam.com' + s.validUrl, fetchUrl: 'https://basalam.com' + encodeURI(s.validUrl), level: s.level, parentId: cur.id, parentTitle: cur.title };\n});\nconst breadcrumb = (data.breadcrumb || []).map(function (b) { return b.title; });\nconst level = data.details && data.details.level ? data.details.level : cur.level;\nconst productsOnPage = (data.products || []).length;\nconst selected = Object.assign({}, cur, { level: level, breadcrumb: breadcrumb, children: children, productsOnPage: productsOnPage, listingCount: data.meta ? data.meta.count : null });\nconst options = [{ option: '0 - همه محصولات کل دسته «' + cur.title + '»' }].concat(children.map(function (c, i) { return { option: (i + 1) + ' - ' + c.title }; }));\nconst scopeFields = [\n  { fieldType: 'html', html: '<div dir=\"rtl\" style=\"text-align:right\"><p>دسته انتخاب‌شده: <b>' + bsEsc(breadcrumb.join(' › ') || cur.title) + '</b></p><p>این دسته ' + children.length + ' زیرشاخه دارد.</p></div>' },\n  { fieldLabel: 'محصولات از کل این دسته جمع‌آوری شود یا از یک زیرشاخه خاص؟', fieldName: 'scope', fieldType: 'radio', fieldOptions: { values: options }, requiredField: true },\n];\nreturn [{ json: { selected: selected, scopeFields: scopeFields } }];\n"
+      },
+      "id": "2c63353e-ad12-48ac-8dec-bd09cad91402",
+      "name": "Read Subcategories",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2144,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.selected.children.length > 0 }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "b902ead0-8632-4b69-8238-26c7e67d05da",
+      "name": "Has Subcategories?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2368,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "defineForm": "json",
+        "jsonOutput": "={{ JSON.stringify($json.scopeFields) }}",
+        "options": {
+          "formTitle": "کل دسته یا زیرشاخه؟",
+          "buttonLabel": "ادامه"
+        }
+      },
+      "id": "4361a5d6-4538-4e61-a7bf-0a285175442f",
+      "name": "Ask Scope",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.5,
+      "position": [
+        2592,
+        224
+      ],
+      "webhookId": "d1ae84c4-0d00-4592-bfb1-c1ee041bc88e"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ---- helpers ----\n// shared helpers (inlined into each Code node by the generator)\nfunction bsNextData(h) {\n  var m = String(h || '').match(/<script id=\"__NEXT_DATA__\"[^>]*>([\\s\\S]*?)<\\/script>/);\n  if (!m) return null;\n  try { return JSON.parse(m[1]); } catch (e) { return null; }\n}\nfunction bsQuery(d, keyName) {\n  var ds = d && d.props && d.props.pageProps && d.props.pageProps.dehydratedState;\n  var list = (ds && ds.queries) || [];\n  for (var i = 0; i < list.length; i++) {\n    var q = list[i];\n    if (Array.isArray(q.queryKey) && q.queryKey[0] === keyName) return q.state ? q.state.data : null;\n  }\n  return null;\n}\nfunction bsNorm(s) {\n  var fa = '۰۱۲۳۴۵۶۷۸۹', ar = '٠١٢٣٤٥٦٧٨٩';\n  var out = '';\n  s = String(s == null ? '' : s);\n  for (var i = 0; i < s.length; i++) {\n    var c = s[i], k = fa.indexOf(c), j = ar.indexOf(c);\n    if (k >= 0) c = String(k); else if (j >= 0) c = String(j);\n    out += c;\n  }\n  return out.replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[\\u200c\\u200f\\u200e]/g, ' ').replace(/[،,]/g, ' ').replace(/\\s+/g, ' ').trim().toLowerCase();\n}\nfunction bsEsc(s) {\n  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\n}\n\n// ---- logic ----\nconst cur = $('Read Subcategories').first().json.selected;\nconst ans = String($input.first().json.scope == null ? '' : $input.first().json.scope).trim();\nconst m = bsNorm(ans).match(/^(\\d+)/);\nconst k = m ? parseInt(m[1], 10) : 0;\nconst child = k > 0 ? cur.children[k - 1] : null;\nif (!child) return [{ json: { drill: false, selected: Object.assign({}, cur, { scope: 'entire' }) } }];\nreturn [{ json: { drill: true, selected: Object.assign({}, child) } }];\n"
+      },
+      "id": "5f097389-ead7-410f-be7d-49509153e754",
+      "name": "Apply Scope",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2816,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.drill }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "dbe36466-3bb6-41b6-bfd5-8d4530083575",
+      "name": "Drill Into Subcategory?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        3040,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ JSON.stringify({ selected: $json.selected }) }}",
+        "options": {}
+      },
+      "id": "4cd38b2d-6e4e-4f9b-9173-610ba327845b",
+      "name": "Selected Category Final",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3264,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function bsNextData(h) {\n  var m = String(h || '').match(/<script id=\"__NEXT_DATA__\"[^>]*>([\\s\\S]*?)<\\/script>/);\n  if (!m) return null;\n  try { return JSON.parse(m[1]); } catch (e) { return null; }\n}\nfunction bsQuery(d, keyName) {\n  var ds = d && d.props && d.props.pageProps && d.props.pageProps.dehydratedState;\n  var list = (ds && ds.queries) || [];\n  for (var i = 0; i < list.length; i++) {\n    var q = list[i];\n    if (Array.isArray(q.queryKey) && q.queryKey[0] === keyName) return q.state ? q.state.data : null;\n  }\n  return null;\n}\nfunction bsEsc(s) {\n  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\n}\n\nconst sel = $input.first().json.selected || {};\nconst base = String(sel.fetchUrl || sel.url || '');\nif (!base || base.indexOf('https://basalam.com/') !== 0) {\n  throw new Error('Selected category has no valid Basalam URL (fetchUrl/url missing or not on basalam.com): ' + JSON.stringify(base));\n}\nfunction withSort(u) {\n  var hash = '';\n  var hi = u.indexOf('#');\n  if (hi >= 0) { hash = u.slice(hi); u = u.slice(0, hi); }\n  var qi = u.indexOf('?');\n  var path = qi >= 0 ? u.slice(0, qi) : u;\n  var parts = qi >= 0 ? u.slice(qi + 1).split('&').filter(function (x) { return x && x.split('=')[0] !== 'sortId'; }) : [];\n  parts.push('sortId=sales');\n  return path + '?' + parts.join('&') + hash;\n}\nreturn [{ json: { selected: sel, sortedUrl: withSort(base) } }];\n"
+      },
+      "id": "c3d26471-5d21-4def-8a1b-37cfadb12020",
+      "name": "Build Sorted Listing URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3488,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.sortedUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (compatible; n8n-basalam-product-research/1.0)"
+            },
+            {
+              "name": "Accept-Language",
+              "value": "fa-IR,fa;q=0.9"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "outputPropertyName": "html"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "43f484a2-2940-4d2d-8122-567becc8e6ac",
+      "name": "Fetch Sorted Listing",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        3712,
+        304
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "function bsNextData(h) {\n  var m = String(h || '').match(/<script id=\"__NEXT_DATA__\"[^>]*>([\\s\\S]*?)<\\/script>/);\n  if (!m) return null;\n  try { return JSON.parse(m[1]); } catch (e) { return null; }\n}\nfunction bsQuery(d, keyName) {\n  var ds = d && d.props && d.props.pageProps && d.props.pageProps.dehydratedState;\n  var list = (ds && ds.queries) || [];\n  for (var i = 0; i < list.length; i++) {\n    var q = list[i];\n    if (Array.isArray(q.queryKey) && q.queryKey[0] === keyName) return q.state ? q.state.data : null;\n  }\n  return null;\n}\nfunction bsEsc(s) {\n  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\n}\n\nconst b = $('Build Sorted Listing URL').first().json;\nconst resp = $input.first().json || {};\nconst d = bsNextData(resp.html);\nconst data = d && bsQuery(d, 'category-search');\nlet ok = false;\nlet err = '';\nlet sortTitle = '';\nif (!data) {\n  err = 'صفحه فهرست دریافت یا خوانده نشد (ممکن است دسترسی محدود شده یا ساختار صفحه تغییر کرده باشد): ' + JSON.stringify(resp.error ? (resp.error.message || resp.error) : 'داده تعبیه‌شده یافت نشد');\n} else {\n  const sorts = data.sorts || [];\n  const sales = sorts.filter(function (x) { return x && x.id === 'sales'; })[0];\n  if (!sales) err = 'گزینه مرتب‌سازی «پرفروش‌ترین» در صفحه وجود ندارد.';\n  else if (!sales.selected) err = 'پارامتر sortId=sales اعمال نشد؛ مرتب‌سازی انتخاب‌شده در صفحه پرفروش‌ترین نیست.';\n  else { ok = true; sortTitle = sales.title || ''; }\n}\nconst det = data && data.details ? data.details : {};\nreturn [{ json: { sortVerified: ok, sortError: err, sortedUrl: b.sortedUrl, sortTitle: sortTitle, resolvedPath: det.validUrl || '', resolvedTitle: det.title || '' } }];\n"
+      },
+      "id": "5d159f34-16c6-48c9-80f5-a2010fd7b0f2",
+      "name": "Verify Sort",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3936,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.sortVerified }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "d49e8d38-63ff-4bfa-8092-9fd31403fb6b",
+      "name": "Sort Verified?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        4160,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ---- helpers ----\n// shared helpers (inlined into each Code node by the generator)\nfunction bsNextData(h) {\n  var m = String(h || '').match(/<script id=\"__NEXT_DATA__\"[^>]*>([\\s\\S]*?)<\\/script>/);\n  if (!m) return null;\n  try { return JSON.parse(m[1]); } catch (e) { return null; }\n}\nfunction bsQuery(d, keyName) {\n  var ds = d && d.props && d.props.pageProps && d.props.pageProps.dehydratedState;\n  var list = (ds && ds.queries) || [];\n  for (var i = 0; i < list.length; i++) {\n    var q = list[i];\n    if (Array.isArray(q.queryKey) && q.queryKey[0] === keyName) return q.state ? q.state.data : null;\n  }\n  return null;\n}\nfunction bsNorm(s) {\n  var fa = '۰۱۲۳۴۵۶۷۸۹', ar = '٠١٢٣٤٥٦٧٨٩';\n  var out = '';\n  s = String(s == null ? '' : s);\n  for (var i = 0; i < s.length; i++) {\n    var c = s[i], k = fa.indexOf(c), j = ar.indexOf(c);\n    if (k >= 0) c = String(k); else if (j >= 0) c = String(j);\n    out += c;\n  }\n  return out.replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[\\u200c\\u200f\\u200e]/g, ' ').replace(/[،,]/g, ' ').replace(/\\s+/g, ' ').trim().toLowerCase();\n}\nfunction bsEsc(s) {\n  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\n}\n\n// ---- logic ----\nconst sel = $('Selected Category Final').first().json.selected;\nconst cur = $input.first().json || {};\nconst err = cur.countError || '';\nconst path = (sel.breadcrumb && sel.breadcrumb.length ? sel.breadcrumb.join(' › ') : sel.title);\nlet html = '<div dir=\"rtl\" style=\"text-align:right\"><p>دسته انتخاب‌شده: <b>' + bsEsc(path) + '</b></p><p>' + bsEsc(sel.url) + '</p>';\nif (err) html += '<p style=\"color:#b00020\"><b>' + bsEsc(err) + '</b></p>';\nconst sv = $('Verify Sort').first().json;\nhtml += '<p>آدرس فهرست پرفروش‌ترین‌ها (مرتب‌سازی تأییدشده): ' + bsEsc(sv.sortedUrl) + '</p></div>';\nreturn [{ json: { formFields: [\n  { fieldType: 'html', html: html },\n  { fieldLabel: 'چند کالای پرفروش را می‌خواهید استخراج کنم؟ تعداد موردنظر را به‌صورت عدد وارد کنید.', fieldName: 'count', fieldType: 'text', placeholder: 'مثلاً 50', requiredField: true },\n] } }];\n"
+      },
+      "id": "c282f749-78b0-4c81-bfd6-e9180b747220",
+      "name": "Build Count Page",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1328,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "defineForm": "json",
+        "jsonOutput": "={{ JSON.stringify($json.formFields) }}",
+        "options": {
+          "formTitle": "تعداد محصولات",
+          "buttonLabel": "ادامه"
+        }
+      },
+      "id": "70248968-7756-43f6-b2b8-13510d30841e",
+      "name": "Ask Product Count",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.5,
+      "position": [
+        1552,
+        224
+      ],
+      "webhookId": "06b71f28-1be6-4a22-897e-1241dd17a91b"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ---- helpers ----\n// shared helpers (inlined into each Code node by the generator)\nfunction bsNextData(h) {\n  var m = String(h || '').match(/<script id=\"__NEXT_DATA__\"[^>]*>([\\s\\S]*?)<\\/script>/);\n  if (!m) return null;\n  try { return JSON.parse(m[1]); } catch (e) { return null; }\n}\nfunction bsQuery(d, keyName) {\n  var ds = d && d.props && d.props.pageProps && d.props.pageProps.dehydratedState;\n  var list = (ds && ds.queries) || [];\n  for (var i = 0; i < list.length; i++) {\n    var q = list[i];\n    if (Array.isArray(q.queryKey) && q.queryKey[0] === keyName) return q.state ? q.state.data : null;\n  }\n  return null;\n}\nfunction bsNorm(s) {\n  var fa = '۰۱۲۳۴۵۶۷۸۹', ar = '٠١٢٣٤٥٦٧٨٩';\n  var out = '';\n  s = String(s == null ? '' : s);\n  for (var i = 0; i < s.length; i++) {\n    var c = s[i], k = fa.indexOf(c), j = ar.indexOf(c);\n    if (k >= 0) c = String(k); else if (j >= 0) c = String(j);\n    out += c;\n  }\n  return out.replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[\\u200c\\u200f\\u200e]/g, ' ').replace(/[،,]/g, ' ').replace(/\\s+/g, ' ').trim().toLowerCase();\n}\nfunction bsEsc(s) {\n  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\n}\n\n// ---- logic ----\nconst MAX_PRODUCTS = 100;\nconst input = $input.first().json || {};\nconst raw = String(input.count == null ? '' : input.count).trim();\nconst q = bsNorm(raw).replace(/\\s/g, '');\nif (!/^\\d+$/.test(q)) return [{ json: { countValid: false, countError: 'ورودی «' + raw + '» معتبر نیست. لطفاً یک عدد صحیح مثبت وارد کنید.' } }];\nconst n = parseInt(q, 10);\nif (n < 1) return [{ json: { countValid: false, countError: 'تعداد باید حداقل 1 باشد.' } }];\nif (n > MAX_PRODUCTS) return [{ json: { countValid: false, countError: 'حداکثر ' + MAX_PRODUCTS + ' محصول در هر اجرا مجاز است (برای رعایت محدودیت نرخ درخواست به سایت).' } }];\nreturn [{ json: { countValid: true, requestedCount: n } }];\n"
+      },
+      "id": "663e5c9c-82d4-4cab-8a9f-0dcfd6509f55",
+      "name": "Validate Count",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1776,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.countValid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "61cc2716-2f9d-44ef-bc13-03b68792b2c2",
+      "name": "Count Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2000,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ---- helpers ----\n// shared helpers (inlined into each Code node by the generator)\nfunction bsNextData(h) {\n  var m = String(h || '').match(/<script id=\"__NEXT_DATA__\"[^>]*>([\\s\\S]*?)<\\/script>/);\n  if (!m) return null;\n  try { return JSON.parse(m[1]); } catch (e) { return null; }\n}\nfunction bsQuery(d, keyName) {\n  var ds = d && d.props && d.props.pageProps && d.props.pageProps.dehydratedState;\n  var list = (ds && ds.queries) || [];\n  for (var i = 0; i < list.length; i++) {\n    var q = list[i];\n    if (Array.isArray(q.queryKey) && q.queryKey[0] === keyName) return q.state ? q.state.data : null;\n  }\n  return null;\n}\nfunction bsNorm(s) {\n  var fa = '۰۱۲۳۴۵۶۷۸۹', ar = '٠١٢٣٤٥٦٧٨٩';\n  var out = '';\n  s = String(s == null ? '' : s);\n  for (var i = 0; i < s.length; i++) {\n    var c = s[i], k = fa.indexOf(c), j = ar.indexOf(c);\n    if (k >= 0) c = String(k); else if (j >= 0) c = String(j);\n    out += c;\n  }\n  return out.replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[\\u200c\\u200f\\u200e]/g, ' ').replace(/[،,]/g, ' ').replace(/\\s+/g, ' ').trim().toLowerCase();\n}\nfunction bsEsc(s) {\n  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\n}\n\n// ---- logic ----\nconst sel = $('Selected Category Final').first().json.selected;\nconst tree = $('Build Category Tree').first().json.categories;\nconst requested = $input.first().json.requestedCount;\nlet sources = [];\nif (sel.productsOnPage > 0) {\n  sources = [sel];\n} else {\n  const kids = sel.children || [];\n  const withProductsLevel = kids.filter(function (k) { return k.level >= 3; });\n  if (withProductsLevel.length) sources = withProductsLevel;\n  else {\n    const ids = {};\n    kids.forEach(function (k) { ids[k.id] = true; });\n    sources = tree.filter(function (c) { return ids[c.parentId]; });\n  }\n  if (!sources.length) sources = [sel];\n}\nconst state = {\n  requested: requested,\n  sources: sources.map(function (s) { return { id: s.id, title: s.title, path: s.path, fetchUrl: s.fetchUrl || ('https://basalam.com' + encodeURI(s.path)), page: 0, done: false, total: null, fails: 0 }; }),\n  cursor: 0,\n  products: [],\n  seenIds: [],\n  pagesFetched: 0,\n  failedPages: 0,\n  skippedSponsored: 0,\n  duplicatesSkipped: 0,\n  warnings: [],\n  maxPages: Math.min(400, Math.ceil(requested / 40) * 2 + sources.length * 2 + 5),\n  startedAt: new Date().toISOString(),\n};\nreturn [{ json: { state: state } }];\n"
+      },
+      "id": "010da47d-ba0f-4642-9f7c-c10d00091d5d",
+      "name": "Init Listing State",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1856,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ---- helpers ----\n// shared helpers (inlined into each Code node by the generator)\nfunction bsNextData(h) {\n  var m = String(h || '').match(/<script id=\"__NEXT_DATA__\"[^>]*>([\\s\\S]*?)<\\/script>/);\n  if (!m) return null;\n  try { return JSON.parse(m[1]); } catch (e) { return null; }\n}\nfunction bsQuery(d, keyName) {\n  var ds = d && d.props && d.props.pageProps && d.props.pageProps.dehydratedState;\n  var list = (ds && ds.queries) || [];\n  for (var i = 0; i < list.length; i++) {\n    var q = list[i];\n    if (Array.isArray(q.queryKey) && q.queryKey[0] === keyName) return q.state ? q.state.data : null;\n  }\n  return null;\n}\nfunction bsNorm(s) {\n  var fa = '۰۱۲۳۴۵۶۷۸۹', ar = '٠١٢٣٤٥٦٧٨٩';\n  var out = '';\n  s = String(s == null ? '' : s);\n  for (var i = 0; i < s.length; i++) {\n    var c = s[i], k = fa.indexOf(c), j = ar.indexOf(c);\n    if (k >= 0) c = String(k); else if (j >= 0) c = String(j);\n    out += c;\n  }\n  return out.replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[\\u200c\\u200f\\u200e]/g, ' ').replace(/[،,]/g, ' ').replace(/\\s+/g, ' ').trim().toLowerCase();\n}\nfunction bsEsc(s) {\n  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\n}\n\n// ---- logic ----\nconst st = JSON.parse(JSON.stringify($input.first().json.state));\nconst n = st.sources.length;\nlet idx = -1;\nfor (let k = 0; k < n; k++) {\n  const i = (st.cursor + k) % n;\n  if (!st.sources[i].done) { idx = i; break; }\n}\nif (idx < 0) idx = 0;\nconst s = st.sources[idx];\ns.page += 1;\nst.cursor = (idx + 1) % n;\nconst bq = s.fetchUrl.indexOf('?');\nconst bpath = bq >= 0 ? s.fetchUrl.slice(0, bq) : s.fetchUrl;\nconst bparts = bq >= 0 ? s.fetchUrl.slice(bq + 1).split('&').filter(function (x) { return x && x.split('=')[0] !== 'sortId' && x.split('=')[0] !== 'page'; }) : [];\nbparts.push('sortId=sales');\nif (s.page > 1) bparts.push('page=' + s.page);\nconst url = bpath + '?' + bparts.join('&');\nreturn [{ json: { state: st, url: url, sourceIndex: idx } }];\n"
+      },
+      "id": "a073eced-e0ac-4289-a4fa-0fc12e731267",
+      "name": "Plan Next Listing Page",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (compatible; n8n-basalam-product-research/1.0)"
+            },
+            {
+              "name": "Accept-Language",
+              "value": "fa-IR,fa;q=0.9"
+            }
+          ]
+        },
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 1500
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "outputPropertyName": "html"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "1d2dfa7f-4b48-4ccb-ab25-711ddb2ec683",
+      "name": "Fetch Listing Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2304,
+        224
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ---- helpers ----\n// shared helpers (inlined into each Code node by the generator)\nfunction bsNextData(h) {\n  var m = String(h || '').match(/<script id=\"__NEXT_DATA__\"[^>]*>([\\s\\S]*?)<\\/script>/);\n  if (!m) return null;\n  try { return JSON.parse(m[1]); } catch (e) { return null; }\n}\nfunction bsQuery(d, keyName) {\n  var ds = d && d.props && d.props.pageProps && d.props.pageProps.dehydratedState;\n  var list = (ds && ds.queries) || [];\n  for (var i = 0; i < list.length; i++) {\n    var q = list[i];\n    if (Array.isArray(q.queryKey) && q.queryKey[0] === keyName) return q.state ? q.state.data : null;\n  }\n  return null;\n}\nfunction bsNorm(s) {\n  var fa = '۰۱۲۳۴۵۶۷۸۹', ar = '٠١٢٣٤٥٦٧٨٩';\n  var out = '';\n  s = String(s == null ? '' : s);\n  for (var i = 0; i < s.length; i++) {\n    var c = s[i], k = fa.indexOf(c), j = ar.indexOf(c);\n    if (k >= 0) c = String(k); else if (j >= 0) c = String(j);\n    out += c;\n  }\n  return out.replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[\\u200c\\u200f\\u200e]/g, ' ').replace(/[،,]/g, ' ').replace(/\\s+/g, ' ').trim().toLowerCase();\n}\nfunction bsEsc(s) {\n  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\n}\n\n// ---- logic ----\nconst plan = $('Plan Next Listing Page').first().json;\nconst st = JSON.parse(JSON.stringify(plan.state));\nconst src = st.sources[plan.sourceIndex];\nst.pagesFetched += 1;\nconst seen = {};\nst.seenIds.forEach(function (id) { seen[id] = true; });\nconst resp = $input.first().json;\nconst d = bsNextData(resp.html);\nconst data = d && bsQuery(d, 'category-search');\nif (!data) {\n  st.failedPages += 1;\n  src.fails += 1;\n  st.warnings.push('Listing page could not be read: ' + plan.url + ' ' + JSON.stringify(resp.error ? (resp.error.message || resp.error) : 'no embedded data'));\n  if (src.fails >= 2) src.done = true; else src.page -= 1;\n} else {\n  const sortSel = (data.sorts || []).filter(function (x) { return x && x.selected; })[0];\n  const sortOk = !!(sortSel && sortSel.id === 'sales');\n  if (!sortOk) {\n    st.warnings.push('Best-selling sort not confirmed on ' + plan.url + '; its products were ignored.');\n    st.sortFailedPages = (st.sortFailedPages || 0) + 1;\n    src.done = true;\n  }\n  const prods = sortOk ? (data.products || []) : [];\n  if (data.meta && typeof data.meta.count === 'number') src.total = data.meta.count;\n  let added = 0;\n  let newIds = 0;\n  const active = st.sources.filter(function (s) { return !s.done; }).length || 1;\n  const remaining = st.requested - st.products.length;\n  const quota = st.sources.length > 1 ? Math.max(12, Math.ceil(remaining / active)) : remaining;\n  let cut = false;\n  for (let i = 0; i < prods.length; i++) {\n    const p = prods[i];\n    if (!p || p.id == null) continue;\n    if (p.ads && Object.keys(p.ads).length) { st.skippedSponsored += 1; continue; }\n    const id = String(p.id);\n    if (seen[id]) { st.duplicatesSkipped += 1; continue; }\n    newIds += 1;\n    if (st.products.length >= st.requested) continue;\n    if (added >= quota) { cut = true; continue; }\n    seen[id] = true;\n    st.seenIds.push(id);\n    const v = p.vendor || {};\n    const rating = p.rating || {};\n    st.products.push({\n      id: id,\n      name: p.name || '',\n      vendorIdentifier: v.identifier || '',\n      vendorName: v.name || '',\n      vendorCity: (v.owner && v.owner.city) || '',\n      price: typeof p.price === 'number' ? p.price : null,\n      primaryPrice: typeof p.primaryPrice === 'number' ? p.primaryPrice : null,\n      ratingAverage: typeof rating.average === 'number' ? rating.average : null,\n      ratingCount: typeof rating.count === 'number' ? rating.count : null,\n      salesCount: typeof p.salesCount === 'number' ? p.salesCount : null,\n      stock: typeof p.stock === 'number' ? p.stock : null,\n      statusTitle: (p.status && p.status.title) || '',\n      isAvailable: p.isAvailable,\n      photo: (p.photo && (p.photo.medium || p.photo.small)) || '',\n      categoryTitle: p.categoryTitle || '',\n      mainAttribute: p.mainAttribute || '',\n      isFreeShipping: p.isFreeShipping,\n      preparationDays: typeof p.preparationDays === 'number' ? p.preparationDays : null,\n      tags: (p.tags || []).map(function (t) { return t.title; }).filter(Boolean).join('، '),\n      hasVariation: !!p.hasVariation,\n      hasVideo: !!p.hasVideo,\n      sourceCategoryTitle: src.title,\n      sourceCategoryPath: src.path,\n      listingUrl: plan.url,\n    });\n    added += 1;\n  }\n  if (prods.length === 0 || newIds === 0) src.done = true;\n  else if (cut) src.page -= 1;\n}\nlet stopReason = '';\nif (st.products.length >= st.requested) stopReason = 'requested_reached';\nelse if (st.sources.every(function (s) { return s.done; })) stopReason = 'no_more_products';\nelse if (st.pagesFetched >= st.maxPages) stopReason = 'page_limit';\nreturn [{ json: { state: st, done: stopReason !== '', stopReason: stopReason } }];\n"
+      },
+      "id": "192db8eb-77ab-4888-827c-74cf711baba9",
+      "name": "Parse Listing Page",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2528,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.done }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "4e29132b-4fa1-47a2-88bf-d77c637cdec2",
+      "name": "Listing Complete?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2752,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.state.products.length > 0 }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "c8eb64c9-3fbf-4ea7-9570-9448cb26157a",
+      "name": "Has Products?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2384,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ---- helpers ----\n// shared helpers (inlined into each Code node by the generator)\nfunction bsNextData(h) {\n  var m = String(h || '').match(/<script id=\"__NEXT_DATA__\"[^>]*>([\\s\\S]*?)<\\/script>/);\n  if (!m) return null;\n  try { return JSON.parse(m[1]); } catch (e) { return null; }\n}\nfunction bsQuery(d, keyName) {\n  var ds = d && d.props && d.props.pageProps && d.props.pageProps.dehydratedState;\n  var list = (ds && ds.queries) || [];\n  for (var i = 0; i < list.length; i++) {\n    var q = list[i];\n    if (Array.isArray(q.queryKey) && q.queryKey[0] === keyName) return q.state ? q.state.data : null;\n  }\n  return null;\n}\nfunction bsNorm(s) {\n  var fa = '۰۱۲۳۴۵۶۷۸۹', ar = '٠١٢٣٤٥٦٧٨٩';\n  var out = '';\n  s = String(s == null ? '' : s);\n  for (var i = 0; i < s.length; i++) {\n    var c = s[i], k = fa.indexOf(c), j = ar.indexOf(c);\n    if (k >= 0) c = String(k); else if (j >= 0) c = String(j);\n    out += c;\n  }\n  return out.replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[\\u200c\\u200f\\u200e]/g, ' ').replace(/[،,]/g, ' ').replace(/\\s+/g, ' ').trim().toLowerCase();\n}\nfunction bsEsc(s) {\n  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\n}\n\n// ---- logic ----\nconst st = $input.first().json.state;\nreturn st.products.map(function (p) {\n  return { json: Object.assign({}, p, { productUrl: 'https://basalam.com/' + encodeURIComponent(p.vendorIdentifier) + '/product/' + p.id }) };\n});\n"
+      },
+      "id": "ff9aeee6-e4da-4e39-929a-055a3e629b81",
+      "name": "Prepare Product Requests",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2608,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.productUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (compatible; n8n-basalam-product-research/1.0)"
+            },
+            {
+              "name": "Accept-Language",
+              "value": "fa-IR,fa;q=0.9"
+            }
+          ]
+        },
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 1500
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "outputPropertyName": "html"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "9372023e-41a2-48f3-bb03-65ebc1e9cf5a",
+      "name": "Fetch Product Pages",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2832,
+        224
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ---- helpers ----\n// shared helpers (inlined into each Code node by the generator)\nfunction bsNextData(h) {\n  var m = String(h || '').match(/<script id=\"__NEXT_DATA__\"[^>]*>([\\s\\S]*?)<\\/script>/);\n  if (!m) return null;\n  try { return JSON.parse(m[1]); } catch (e) { return null; }\n}\nfunction bsQuery(d, keyName) {\n  var ds = d && d.props && d.props.pageProps && d.props.pageProps.dehydratedState;\n  var list = (ds && ds.queries) || [];\n  for (var i = 0; i < list.length; i++) {\n    var q = list[i];\n    if (Array.isArray(q.queryKey) && q.queryKey[0] === keyName) return q.state ? q.state.data : null;\n  }\n  return null;\n}\nfunction bsNorm(s) {\n  var fa = '۰۱۲۳۴۵۶۷۸۹', ar = '٠١٢٣٤٥٦٧٨٩';\n  var out = '';\n  s = String(s == null ? '' : s);\n  for (var i = 0; i < s.length; i++) {\n    var c = s[i], k = fa.indexOf(c), j = ar.indexOf(c);\n    if (k >= 0) c = String(k); else if (j >= 0) c = String(j);\n    out += c;\n  }\n  return out.replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[\\u200c\\u200f\\u200e]/g, ' ').replace(/[،,]/g, ' ').replace(/\\s+/g, ' ').trim().toLowerCase();\n}\nfunction bsEsc(s) {\n  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\n}\n\n// ---- logic ----\nconst reqs = $('Prepare Product Requests').all();\nconst responses = $input.all();\nconst out = [];\nfunction num(v) { return typeof v === 'number' && isFinite(v) ? v : null; }\nfunction txt(v) { return v == null ? '' : String(v).trim(); }\nfor (let i = 0; i < reqs.length; i++) {\n  const L = reqs[i].json;\n  const r = responses[i] ? responses[i].json : {};\n  const collectedAt = new Date().toISOString();\n  const d = bsNextData(r.html);\n  const pdp = d && bsQuery(d, 'pdp');\n  const c = pdp && pdp.core && pdp.core.id ? pdp.core : null;\n  const notes = [];\n  if (!c) notes.push('صفحه محصول قابل دریافت نبود؛ فقط داده‌های صفحه فهرست ثبت شد' + (r.error ? ' (' + txt(r.error.message || JSON.stringify(r.error)).slice(0, 200) + ')' : ''));\n  const v = (c && c.vendor) || {};\n  let crumbs = [];\n  const nav = pdp && pdp.navigation && pdp.navigation.breadcrumbs;\n  if (nav && nav.length && nav[0].breadcrumb) crumbs = nav[0].breadcrumb.map(function (b) { return b.title; });\n  const price = c ? num(c.price) : L.price;\n  let primary = c ? num(c.primaryPrice) : L.primaryPrice;\n  let originalPrice = primary != null && price != null && primary > price ? primary : null;\n  let discountPct = null;\n  if (c && c.discount && num(c.discount.percent) != null) discountPct = c.discount.percent;\n  else if (originalPrice != null) discountPct = Math.round(((originalPrice - price) / originalPrice) * 100);\n  const photo = c && c.photo ? (c.photo.original || c.photo.lg || c.photo.md) : L.photo;\n  const photos = c ? (c.photo ? 1 : 0) + (Array.isArray(c.photos) ? c.photos.length : 0) : null;\n  const city = v.city ? [txt(v.city.name), v.city.province ? txt(v.city.province.name) : ''].filter(Boolean) : [];\n  const uniqueCity = city.filter(function (x, k) { return city.indexOf(x) === k; }).join('، ') || L.vendorCity;\n  const reviewGroup = pdp && pdp.review && pdp.review.productReviewsGroup;\n  let ratingAvg = c ? num(c.rating) : L.ratingAverage;\n  let ratingCount = c ? num(c.reviewCount) : L.ratingCount;\n  if (reviewGroup && num(reviewGroup.starsAverage) != null) ratingAvg = reviewGroup.starsAverage;\n  if (reviewGroup && num(reviewGroup.starsTotalCount) != null) ratingCount = reviewGroup.starsTotalCount;\n  if (ratingCount === 0) ratingAvg = null;\n  const specs = [];\n  if (c && Array.isArray(c.attributes)) c.attributes.forEach(function (a) { if (a && a.key && txt(a.value)) specs.push(txt(a.key) + ': ' + txt(a.value)); });\n  if (c && num(c.netWeight)) specs.push('وزن خالص: ' + c.netWeight + ' گرم');\n  if (c && num(c.packagedWeight)) specs.push('وزن با بسته‌بندی: ' + c.packagedWeight + ' گرم');\n  const variants = [];\n  if (c && Array.isArray(c.variants)) c.variants.forEach(function (vr) {\n    const props = (vr.properties || []).map(function (p) { return txt(p.property && p.property.title) + ': ' + txt(p.value && (p.value.title || p.value.value)); }).join('، ');\n    const extra = [];\n    if (num(vr.price) != null) extra.push('قیمت ' + vr.price + ' ریال');\n    if (num(vr.stock) != null) extra.push('موجودی ' + vr.stock);\n    variants.push(props + (extra.length ? ' (' + extra.join('، ') + ')' : ''));\n  });\n  const ship = [];\n  const prep = c ? num(c.preparationDay) : L.preparationDays;\n  if (prep != null) ship.push('زمان آماده‌سازی: ' + prep + ' روز');\n  const freeShip = c ? c.isFreeShipping : L.isFreeShipping;\n  if (freeShip === true) ship.push('ارسال رایگان');\n  if (v.shippingMethods && v.shippingMethods.length) ship.push('روش‌های ارسال غرفه: ' + v.shippingMethods.map(function (s) { return txt(s.name || s.title); }).join('، '));\n  if (c && c.locationDeployment && c.locationDeployment.name) ship.push(txt(c.locationDeployment.name));\n  const statusTitle = c && c.status ? txt(c.status.name || c.status.title) : L.statusTitle;\n  const available = c ? c.isAvailable : L.isAvailable;\n  const vendorIdent = v.identifier || L.vendorIdentifier;\n  const revObj = pdp && pdp.review ? pdp.review : null;\n  const revList = [];\n  let revStatus = '';\n  if (!c) revStatus = 'صفحه محصول دریافت نشد؛ نظرات بررسی نشد';\n  else if (!revObj || !Array.isArray(revObj.reviews)) revStatus = 'بخش نظرات در داده‌های صفحه محصول وجود نداشت';\n  else {\n    revObj.reviews.forEach(function (rv) {\n      if (!rv || rv.parentId) return;\n      const vm = Array.isArray(rv.variationMetadata) ? rv.variationMetadata.map(function (m) { if (m == null) return ''; if (typeof m !== 'object') return txt(m); const k = txt(m.title || m.name || m.property || ''); const val = txt(m.value && typeof m.value === 'object' ? (m.value.title || m.value.name || '') : (m.value || '')); return k && val ? k + ': ' + val : (k || val); }).filter(Boolean).join('، ') : '';\n      revList.push({ id: rv.id, text: txt(rv.description), createdAt: txt(rv.createdAt), star: num(rv.star), variant: vm, hasInvoiceItem: rv.invoiceItemId != null, photos: rv.attachments && Array.isArray(rv.attachments.photos) ? rv.attachments.photos.length : null, likes: num(rv.likeCount) });\n    });\n    const total = reviewGroup ? num(reviewGroup.starsTotalCount) : null;\n    if (revObj.hasNext) revStatus = 'فقط ' + revList.length + ' نظر صفحه اول دریافت شد' + (total != null ? ' از ' + total + ' امتیاز/نظر' : '') + '؛ ادامه نظرات نیازمند فراخوانی بارگذاری بیشتر است که به‌صورت تأییدشده در دسترس نبود';\n    else revStatus = revList.length ? 'همه ' + revList.length + ' نظر موجود در صفحه دریافت شد' : 'نظری برای این محصول وجود نداشت';\n  }\n  out.push({ json: {\n    productId: L.id,\n    title: c ? txt(c.title) : L.name,\n    productUrl: L.productUrl,\n    imageUrl: photo || '',\n    priceRial: price,\n    priceToman: price != null ? Math.round(price / 10) : null,\n    originalPriceRial: originalPrice,\n    discountPercent: discountPct,\n    categoryPath: crumbs.join(' › '),\n    category: crumbs.length > 1 ? crumbs[1] : (crumbs[0] || ''),\n    subcategory: crumbs.length > 2 ? crumbs[crumbs.length - 1] : '',\n    listingCategory: L.sourceCategoryTitle,\n    sellerName: txt(v.title) || L.vendorName,\n    sellerUrl: vendorIdent ? 'https://basalam.com/' + encodeURIComponent(vendorIdent) : '',\n    sellerLocation: uniqueCity,\n    productRating: ratingAvg,\n    reviewCount: ratingCount,\n    salesCount: L.salesCount,\n    availability: [statusTitle, available === true ? 'قابل خرید' : available === false ? 'ناموجود' : ''].filter(Boolean).join(' - '),\n    stock: c ? num(c.inventory) : L.stock,\n    description: c ? txt(c.description) : '',\n    specifications: specs.join('\\n'),\n    variants: variants.join('\\n'),\n    shipping: ship.join('\\n'),\n    tags: L.tags,\n    imageCount: photos,\n    hasVideo: c ? !!c.video : L.hasVideo,\n    createdAt: c ? txt(c.createdAt) : '',\n    updatedAt: c ? txt(c.updatedAt) : '',\n    collectedAt: collectedAt,\n    reviewsRaw: revList,\n    reviewStatus: revStatus,\n    reviewSectionPresent: !!(revObj && Array.isArray(revObj.reviews)),\n    reviewHasMore: !!(revObj && revObj.hasNext),\n    detailPageOk: !!c,\n    notes: notes.join(' | '),\n  } });\n}\nreturn out;\n"
+      },
+      "id": "4d87b1ad-5c4d-4f64-9447-5c862f276c2a",
+      "name": "Parse Product Details",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3056,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ---- minimal pure-JS XLSX writer (no external modules) ----\nfunction xEsc(s) {\n  return String(s).replace(/[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F\\uFFFE\\uFFFF]/g, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\n}\nfunction utf8Bytes(str) {\n  var out = [];\n  for (var i = 0; i < str.length; i++) {\n    var c = str.charCodeAt(i);\n    if (c >= 0xd800 && c <= 0xdbff && i + 1 < str.length) {\n      var c2 = str.charCodeAt(i + 1);\n      if (c2 >= 0xdc00 && c2 <= 0xdfff) { c = 0x10000 + ((c - 0xd800) << 10) + (c2 - 0xdc00); i++; } else c = 0xfffd;\n    } else if (c >= 0xd800 && c <= 0xdfff) c = 0xfffd;\n    if (c < 0x80) out.push(c);\n    else if (c < 0x800) out.push(0xc0 | (c >> 6), 0x80 | (c & 63));\n    else if (c < 0x10000) out.push(0xe0 | (c >> 12), 0x80 | ((c >> 6) & 63), 0x80 | (c & 63));\n    else out.push(0xf0 | (c >> 18), 0x80 | ((c >> 12) & 63), 0x80 | ((c >> 6) & 63), 0x80 | (c & 63));\n  }\n  return out;\n}\nvar CRC_TABLE = (function () {\n  var t = [];\n  for (var n = 0; n < 256; n++) { var c = n; for (var k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t.push(c >>> 0); }\n  return t;\n})();\nfunction crc32(bytes) {\n  var c = 0xffffffff;\n  for (var i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 255] ^ (c >>> 8);\n  return (c ^ 0xffffffff) >>> 0;\n}\nfunction pushU16(a, v) { a.push(v & 255, (v >>> 8) & 255); }\nfunction pushU32(a, v) { a.push(v & 255, (v >>> 8) & 255, (v >>> 16) & 255, (v >>> 24) & 255); }\nfunction zipStore(files) {\n  var out = [], central = [], offset = 0, dosTime = 0, dosDate = (46 << 9) | (1 << 5) | 1;\n  files.forEach(function (f) {\n    var name = utf8Bytes(f.name), data = utf8Bytes(f.content), crc = crc32(data);\n    var h = [];\n    pushU32(h, 0x04034b50); pushU16(h, 20); pushU16(h, 0x0800); pushU16(h, 0); pushU16(h, dosTime); pushU16(h, dosDate);\n    pushU32(h, crc); pushU32(h, data.length); pushU32(h, data.length); pushU16(h, name.length); pushU16(h, 0);\n    var c = [];\n    pushU32(c, 0x02014b50); pushU16(c, 20); pushU16(c, 20); pushU16(c, 0x0800); pushU16(c, 0); pushU16(c, dosTime); pushU16(c, dosDate);\n    pushU32(c, crc); pushU32(c, data.length); pushU32(c, data.length); pushU16(c, name.length); pushU16(c, 0); pushU16(c, 0);\n    pushU16(c, 0); pushU16(c, 0); pushU32(c, 0); pushU32(c, offset);\n    for (var i = 0; i < name.length; i++) c.push(name[i]);\n    central.push(c);\n    for (var j = 0; j < h.length; j++) out.push(h[j]);\n    for (var k = 0; k < name.length; k++) out.push(name[k]);\n    for (var m = 0; m < data.length; m++) out.push(data[m]);\n    offset += h.length + name.length + data.length;\n  });\n  var cdStart = offset, cdSize = 0;\n  central.forEach(function (c) { for (var i = 0; i < c.length; i++) out.push(c[i]); cdSize += c.length; });\n  var e = [];\n  pushU32(e, 0x06054b50); pushU16(e, 0); pushU16(e, 0); pushU16(e, files.length); pushU16(e, files.length);\n  pushU32(e, cdSize); pushU32(e, cdStart); pushU16(e, 0);\n  for (var q = 0; q < e.length; q++) out.push(e[q]);\n  return out;\n}\nfunction toBase64(bytes) {\n  var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/', parts = [], s = '';\n  for (var i = 0; i < bytes.length; i += 3) {\n    var b1 = bytes[i], b2 = i + 1 < bytes.length ? bytes[i + 1] : NaN, b3 = i + 2 < bytes.length ? bytes[i + 2] : NaN;\n    var n = (b1 << 16) | ((b2 || 0) << 8) | (b3 || 0);\n    s += chars[(n >> 18) & 63] + chars[(n >> 12) & 63] + (isNaN(b2) ? '=' : chars[(n >> 6) & 63]) + (isNaN(b3) ? '=' : chars[n & 63]);\n    if (s.length > 8000) { parts.push(s); s = ''; }\n  }\n  parts.push(s);\n  return parts.join('');\n}\nfunction colName(n) { var s = ''; n++; while (n > 0) { var m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; }\nfunction safeLink(u) {\n  if (typeof u !== 'string' || !/^https?:\\/\\//i.test(u)) return null;\n  var enc;\n  try { enc = encodeURI(decodeURI(u)); } catch (e) { enc = encodeURI(u); }\n  return enc.length <= 2000 ? enc : null;\n}\nvar CELL_MAX = 32767;\nvar XF = { text: 2, wrap: 3, int: 4, dec: 5, pct: 6, link: 7 };\nfunction cellXml(ref, v, style) {\n  if (v === null || v === undefined || v === '') return '<c r=\"' + ref + '\" s=\"' + style + '\"/>';\n  if (typeof v === 'number' && isFinite(v)) return '<c r=\"' + ref + '\" s=\"' + style + '\"><v>' + v + '</v></c>';\n  var str = String(v);\n  if (str.length > CELL_MAX) str = str.slice(0, CELL_MAX);\n  return '<c r=\"' + ref + '\" s=\"' + style + '\" t=\"inlineStr\"><is><t xml:space=\"preserve\">' + xEsc(str) + '</t></is></c>';\n}\nvar STYLES_XML = '<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\\n<styleSheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\">' +\n  '<numFmts count=\"3\"><numFmt numFmtId=\"164\" formatCode=\"#,##0\"/><numFmt numFmtId=\"165\" formatCode=\"0.0\"/><numFmt numFmtId=\"166\" formatCode=\"0&quot;%&quot;\"/></numFmts>' +\n  '<fonts count=\"3\"><font><sz val=\"11\"/><name val=\"Tahoma\"/></font><font><b/><sz val=\"11\"/><color rgb=\"FFFFFFFF\"/><name val=\"Tahoma\"/></font><font><u/><sz val=\"11\"/><color rgb=\"FF0563C1\"/><name val=\"Tahoma\"/></font></fonts>' +\n  '<fills count=\"3\"><fill><patternFill patternType=\"none\"/></fill><fill><patternFill patternType=\"gray125\"/></fill><fill><patternFill patternType=\"solid\"><fgColor rgb=\"FF1F4E78\"/><bgColor indexed=\"64\"/></patternFill></fill></fills>' +\n  '<borders count=\"2\"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style=\"thin\"><color rgb=\"FFD0D0D0\"/></left><right style=\"thin\"><color rgb=\"FFD0D0D0\"/></right><top style=\"thin\"><color rgb=\"FFD0D0D0\"/></top><bottom style=\"thin\"><color rgb=\"FFD0D0D0\"/></bottom><diagonal/></border></borders>' +\n  '<cellStyleXfs count=\"1\"><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\"/></cellStyleXfs>' +\n  '<cellXfs count=\"8\">' +\n  '<xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\"/>' +\n  '<xf numFmtId=\"0\" fontId=\"1\" fillId=\"2\" borderId=\"1\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\" vertical=\"center\" wrapText=\"1\"/></xf>' +\n  '<xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"1\" xfId=\"0\" applyBorder=\"1\" applyAlignment=\"1\"><alignment vertical=\"top\"/></xf>' +\n  '<xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"1\" xfId=\"0\" applyBorder=\"1\" applyAlignment=\"1\"><alignment vertical=\"top\" wrapText=\"1\"/></xf>' +\n  '<xf numFmtId=\"164\" fontId=\"0\" fillId=\"0\" borderId=\"1\" xfId=\"0\" applyNumberFormat=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment vertical=\"top\"/></xf>' +\n  '<xf numFmtId=\"165\" fontId=\"0\" fillId=\"0\" borderId=\"1\" xfId=\"0\" applyNumberFormat=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment vertical=\"top\"/></xf>' +\n  '<xf numFmtId=\"166\" fontId=\"0\" fillId=\"0\" borderId=\"1\" xfId=\"0\" applyNumberFormat=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment vertical=\"top\"/></xf>' +\n  '<xf numFmtId=\"0\" fontId=\"2\" fillId=\"0\" borderId=\"1\" xfId=\"0\" applyFont=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment vertical=\"top\"/></xf>' +\n  '</cellXfs><cellStyles count=\"1\"><cellStyle name=\"Normal\" xfId=\"0\" builtinId=\"0\"/></cellStyles></styleSheet>';\nfunction sheetXml(columns, rows) {\n  var nCols = columns.length, links = [];\n  var lastRef = colName(nCols - 1) + (rows.length + 1);\n  var x = '<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\\n<worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\">';\n  x += '<dimension ref=\"A1:' + lastRef + '\"/><sheetViews><sheetView rightToLeft=\"1\" workbookViewId=\"0\"><pane ySplit=\"1\" topLeftCell=\"A2\" activePane=\"bottomLeft\" state=\"frozen\"/><selection pane=\"bottomLeft\" activeCell=\"A2\" sqref=\"A2\"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight=\"15\"/><cols>';\n  columns.forEach(function (c, i) { x += '<col min=\"' + (i + 1) + '\" max=\"' + (i + 1) + '\" width=\"' + c.width + '\" customWidth=\"1\"/>'; });\n  x += '</cols><sheetData><row r=\"1\" ht=\"32\" customHeight=\"1\">';\n  columns.forEach(function (c, i) { x += cellXml(colName(i) + '1', c.header, 1); });\n  x += '</row>';\n  rows.forEach(function (row, ri) {\n    var r = ri + 2;\n    x += '<row r=\"' + r + '\">';\n    columns.forEach(function (c, ci) {\n      var v = row[ci], ref = colName(ci) + r;\n      if (c.type === 'link') {\n        var l = safeLink(v);\n        if (l) links.push({ ref: ref, url: l });\n        x += cellXml(ref, v, l ? XF.link : XF.text);\n      } else if ((c.type === 'int' || c.type === 'dec' || c.type === 'pct') && typeof v !== 'number') {\n        x += cellXml(ref, v, XF.text);\n      } else x += cellXml(ref, v, XF[c.type] || 2);\n    });\n    x += '</row>';\n  });\n  x += '</sheetData><autoFilter ref=\"A1:' + lastRef + '\"/>';\n  if (links.length) {\n    x += '<hyperlinks>';\n    links.forEach(function (l, i) { x += '<hyperlink ref=\"' + l.ref + '\" r:id=\"rId' + (i + 1) + '\"/>'; });\n    x += '</hyperlinks>';\n  }\n  x += '<pageMargins left=\"0.7\" right=\"0.7\" top=\"0.75\" bottom=\"0.75\" header=\"0.3\" footer=\"0.3\"/></worksheet>';\n  var rels = '<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\\n<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">';\n  links.forEach(function (l, i) { rels += '<Relationship Id=\"rId' + (i + 1) + '\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink\" Target=\"' + xEsc(l.url) + '\" TargetMode=\"External\"/>'; });\n  rels += '</Relationships>';\n  return { xml: x, rels: rels, lastRef: lastRef, linkCount: links.length };\n}\nfunction buildXlsx(sheets) {\n  var files = [], wbSheets = '', wbRels = '', ct = '', defined = '', total = 0;\n  sheets.forEach(function (sh, i) {\n    var n = i + 1, built = sheetXml(sh.columns, sh.rows);\n    total += built.linkCount;\n    files.push({ name: 'xl/worksheets/sheet' + n + '.xml', content: built.xml });\n    files.push({ name: 'xl/worksheets/_rels/sheet' + n + '.xml.rels', content: built.rels });\n    wbSheets += '<sheet name=\"' + xEsc(sh.name) + '\" sheetId=\"' + n + '\" r:id=\"rId' + n + '\"/>';\n    wbRels += '<Relationship Id=\"rId' + n + '\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet\" Target=\"worksheets/sheet' + n + '.xml\"/>';\n    ct += '<Override PartName=\"/xl/worksheets/sheet' + n + '.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml\"/>';\n    var parts = built.lastRef.match(/^([A-Z]+)(\\d+)$/);\n    defined += '<definedName name=\"_xlnm._FilterDatabase\" localSheetId=\"' + i + '\" hidden=\"1\">' + xEsc(\"'\" + sh.name + \"'!$A$1:$\" + parts[1] + '$' + parts[2]) + '</definedName>';\n  });\n  wbRels += '<Relationship Id=\"rId' + (sheets.length + 1) + '\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles\" Target=\"styles.xml\"/>';\n  files.unshift({ name: 'xl/styles.xml', content: STYLES_XML });\n  files.unshift({ name: 'xl/_rels/workbook.xml.rels', content: '<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\\n<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">' + wbRels + '</Relationships>' });\n  files.unshift({ name: 'xl/workbook.xml', content: '<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\\n<workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"><bookViews><workbookView/></bookViews><sheets>' + wbSheets + '</sheets><definedNames>' + defined + '</definedNames></workbook>' });\n  files.unshift({ name: '_rels/.rels', content: '<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\\n<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument\" Target=\"xl/workbook.xml\"/></Relationships>' });\n  files.unshift({ name: '[Content_Types].xml', content: '<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\\n<Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\"><Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/><Default Extension=\"xml\" ContentType=\"application/xml\"/><Override PartName=\"/xl/workbook.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml\"/><Override PartName=\"/xl/styles.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml\"/>' + ct + '</Types>' });\n  var bytes = zipStore(files);\n  return { bytes: bytes, base64: toBase64(bytes), size: bytes.length, linkCount: total };\n}\n\nfunction rvNorm(s) {\n  var fa = '۰۱۲۳۴۵۶۷۸۹', ar = '٠١٢٣٤٥٦٧٨٩', out = '';\n  s = String(s == null ? '' : s);\n  for (var i = 0; i < s.length; i++) {\n    var c = s[i], k = fa.indexOf(c), j = ar.indexOf(c);\n    if (k >= 0) c = String(k); else if (j >= 0) c = String(j);\n    out += c;\n  }\n  out = out.replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[\\u200c\\u200f\\u200e\\u0640]/g, ' ').replace(/[\\u064B-\\u065F]/g, '');\n  out = out.replace(/[^\\u0600-\\u06FFa-zA-Z0-9\\s]/g, ' ').replace(/[،؛؟۔]/g, ' ');\n  out = out.replace(/(.)\\1{2,}/g, '$1').replace(/\\s+/g, ' ').trim().toLowerCase();\n  return out;\n}\nvar RV_GENERIC = {};\n('عالی عالیه خوب خوبه خیلی بسیار بود بودن هست است باشه واقعا واقعاً فوق العاده فوقالعاده فوق‌العاده راضی راضیم راضی‌ام ام ممنون مرسی سپاس سپاسگزارم تشکر دمتون گرم دم ست بد بدی افتضاح افتضاحه اصلا اصلاً نیست نبود نبودم نیستم زیبا قشنگ قشنگه کامل عالیی محشر عالیه‌ همه چی چیز بهترین بهتر ایول دوست داشتم داشتن پسندیدم عاشقشم عاشق شدم خیلی‌خوب نه تو فروشنده غرفه محصول کالا جنس یک حتما حتماً پیشنهاد میکنم می‌کنم میشه می‌شه ok good nice great bad wow top')\n  .split(/\\s+/).forEach(function (w) { if (w) RV_GENERIC[rvNorm(w)] = true; });\nvar RV_FILLER = {};\n('و از این آن به من که را رو با هم در برای تا یا هر هیچ یه یک ی ها های ان اون اینو همین خیلی خب پس دیگه فقط تنها مرسی')\n  .split(/\\s+/).forEach(function (w) { if (w) RV_FILLER[rvNorm(w)] = true; });\nvar RV_ASPECT = ('کیفیت ساخت دوام بادوام مقاوم عمر باتری عملکرد سرعت اندازه سایز ابعاد وزن رنگ جنس قیمت ارزش ارزان گران بسته بندی بستهبندی بسته‌بندی ارسال پست پیک تحویل دیر سریع شکسته خراب معیوب پاره آسیب ضمانت گارانتی پشتیبانی راهنما نصب استفاده مصرف بو طعم نرم سفت سنگین سبک چسب داغ تمیز شفاف براق کدر مطابق عکس تصویر موجودی')\n  .split(/\\s+/).map(rvNorm).filter(Boolean);\nvar RV_CONTRAST = ['ولی', 'اما', 'متاسفانه', 'متأسفانه', 'البته', 'ولیکن', 'هرچند', 'با اینکه', 'بعد', 'قبل', 'پس از', 'چون', 'زیرا'].map(rvNorm);\nfunction rvClassify(text) {\n  var n = rvNorm(text);\n  if (!n) return { keep: false, reason: 'متن خالی یا فقط ایموجی/علامت' };\n  var toks = n.split(' ');\n  var content = toks.filter(function (t) { return !RV_GENERIC[t] && !RV_FILLER[t]; });\n  var hasDigit = /[0-9]/.test(n);\n  var aspectHit = RV_ASPECT.filter(function (a) { return (' ' + n + ' ').indexOf(' ' + a) >= 0 || n.indexOf(a) >= 0; });\n  var contrast = RV_CONTRAST.some(function (c) { return (' ' + n + ' ').indexOf(' ' + c + ' ') >= 0; });\n  if (content.length >= 3) return { keep: true, reason: '' };\n  if (content.length >= 2 && (aspectHit.length > 0 || hasDigit || contrast)) return { keep: true, reason: '' };\n  if (content.length >= 1 && aspectHit.length > 0 && toks.length >= 4) return { keep: true, reason: '' };\n  if (content.length === 0) return { keep: false, reason: 'ستایش یا گلایه کلی بدون جزئیات' };\n  return { keep: false, reason: 'اطلاعات اختصاصی کافی ندارد' };\n}\n\n// ---- logic ----\nconst rows = $input.all().map(function (i) { return i.json; }).filter(function (r) { return r && r.productId; });\nif (!rows.length) throw new Error('No product rows reached the Excel step.');\nconst loop = $('Listing Complete?').first().json;\nconst st = loop.state;\nconst sv = $('Verify Sort').first().json;\nconst columns = [\n  { key: '_rank', header: 'رتبه در پرفروش‌ترین‌ها', width: 12, type: 'int' },\n  { key: 'productId', header: 'شناسه محصول', width: 14, type: 'text' },\n  { key: 'title', header: 'نام محصول', width: 45, type: 'wrap' },\n  { key: 'productUrl', header: 'لینک محصول', width: 42, type: 'link' },\n  { key: 'priceToman', header: 'قیمت فعلی (تومان)', width: 18, type: 'int' },\n  { key: 'priceRial', header: 'قیمت فعلی (ریال)', width: 18, type: 'int' },\n  { key: 'originalPriceRial', header: 'قیمت قبل از تخفیف (ریال)', width: 22, type: 'int' },\n  { key: 'discountPercent', header: 'درصد تخفیف', width: 12, type: 'pct' },\n  { key: 'description', header: 'توضیحات کامل محصول', width: 70, type: 'wrap' },\n  { key: 'imageUrl', header: 'لینک تصویر اصلی', width: 42, type: 'link' },\n  { key: 'sellerName', header: 'نام غرفه / فروشنده', width: 26, type: 'text' },\n  { key: 'sellerUrl', header: 'لینک غرفه', width: 36, type: 'link' },\n  { key: 'sellerLocation', header: 'شهر / استان فروشنده', width: 20, type: 'text' },\n  { key: 'productRating', header: 'امتیاز محصول', width: 12, type: 'dec' },\n  { key: 'reviewCount', header: 'تعداد نظرات / امتیازها', width: 14, type: 'int' },\n  { key: 'salesCount', header: 'تعداد فروش (داده فهرست)', width: 16, type: 'int' },\n  { key: 'categoryPath', header: 'مسیر دسته‌بندی', width: 40, type: 'wrap' },\n  { key: 'listingCategory', header: 'دسته منبع فهرست', width: 24, type: 'text' },\n  { key: 'specifications', header: 'مشخصات و ویژگی‌ها', width: 45, type: 'wrap' },\n  { key: 'variants', header: 'تنوع‌ها', width: 38, type: 'wrap' },\n  { key: 'shipping', header: 'اطلاعات ارسال', width: 40, type: 'wrap' },\n  { key: 'availability', header: 'وضعیت موجودی', width: 20, type: 'text' },\n  { key: 'stock', header: 'موجودی انبار', width: 12, type: 'int' },\n  { key: 'tags', header: 'برچسب‌ها', width: 24, type: 'wrap' },\n  { key: 'imageCount', header: 'تعداد تصاویر', width: 10, type: 'int' },\n  { key: 'hasVideo', header: 'ویدیو دارد', width: 10, type: 'text' },\n  { key: 'createdAt', header: 'تاریخ ایجاد محصول', width: 22, type: 'text' },\n  { key: 'updatedAt', header: 'آخرین بروزرسانی', width: 22, type: 'text' },\n  { key: 'collectedAt', header: 'زمان جمع‌آوری (UTC)', width: 24, type: 'text' },\n  { key: 'reviewStatus', header: 'وضعیت نظرات', width: 40, type: 'wrap' },\n  { key: 'reviewsFetchedCount', header: 'نظرات دریافت‌شده', width: 12, type: 'int' },\n  { key: 'reviewsKeptCount', header: 'نظرات مفید ثبت‌شده', width: 12, type: 'int' },\n  { key: 'notes', header: 'یادداشت استخراج', width: 36, type: 'wrap' }\n];\nlet truncated = 0;\nconst sheetRows = rows.map(function (r, idx) {\n  const rec = Object.assign({}, r, { _rank: idx + 1 });\n  if (typeof rec.description === 'string' && rec.description.length > CELL_MAX) {\n    truncated += 1;\n    rec.notes = (rec.notes ? rec.notes + ' | ' : '') + 'توضیحات از حد مجاز یک سلول اکسل (' + CELL_MAX + ' نویسه) بیشتر بود و در انتها کوتاه شد.';\n  }\n  return columns.map(function (c) {\n    let x = rec[c.key];\n    if (c.key === 'hasVideo') x = x === true ? 'بله' : x === false ? 'خیر' : '';\n    return x === null || x === undefined ? '' : x;\n  });\n});\nconst reviewColumns = [\n  { header: 'product_name', width: 36, type: 'wrap' },\n  { header: 'product_url', width: 42, type: 'link' },\n  { header: 'review_text', width: 80, type: 'wrap' },\n  { header: 'review_rating', width: 12, type: 'int' },\n  { header: 'review_date', width: 20, type: 'text' },\n  { header: 'verified_purchase', width: 16, type: 'text' },\n  { header: 'product_variant', width: 28, type: 'wrap' },\n  { header: 'review_helpful_count', width: 14, type: 'int' },\n  { header: 'review_id', width: 14, type: 'text' }\n];\nconst summaryColumns = [\n  { header: 'product_name', width: 36, type: 'wrap' },\n  { header: 'product_url', width: 42, type: 'link' },\n  { header: 'total_reviews_reported', width: 16, type: 'int' },\n  { header: 'reviews_retrieved', width: 14, type: 'int' },\n  { header: 'useful_reviews_kept', width: 14, type: 'int' },\n  { header: 'generic_reviews_excluded', width: 16, type: 'int' },\n  { header: 'review_collection_status', width: 20, type: 'text' },\n  { header: 'status_note', width: 70, type: 'wrap' }\n];\nconst reviewRows = [];\nconst summaryRows = [];\nlet reviewsFetchedTotal = 0, reviewsExcludedTotal = 0, reviewsDupTotal = 0, incompleteProducts = 0;\nrows.forEach(function (r, idx) {\n  const raw = Array.isArray(r.reviewsRaw) ? r.reviewsRaw : [];\n  const seen = {};\n  let kept = 0, dups = 0;\n  raw.forEach(function (rv) {\n    reviewsFetchedTotal += 1;\n    const text = String(rv.text || '');\n    const trimmed = text.trim();\n    const key = rv.id != null ? 'id:' + rv.id : 'tx:' + r.productId + ':' + rvNorm(trimmed);\n    if (seen[key]) { dups += 1; reviewsDupTotal += 1; reviewsExcludedTotal += 1; return; }\n    seen[key] = true;\n    const verdict = rvClassify(trimmed);\n    if (!verdict.keep) { reviewsExcludedTotal += 1; return; }\n    kept += 1;\n    reviewRows.push([r.title, r.productUrl, text, typeof rv.star === 'number' ? rv.star : '', rv.createdAt || '', rv.hasInvoiceItem ? 'yes' : 'no', rv.variant || '', typeof rv.likes === 'number' ? rv.likes : '', rv.id == null ? '' : String(rv.id)]);\n  });\n  let status, note;\n  if (!r.detailPageOk) { status = 'inaccessible'; note = 'Product page could not be fetched; reviews were not read.'; }\n  else if (!r.reviewSectionPresent) { status = 'unavailable'; note = 'No review section in the page data.'; }\n  else if (r.reviewHasMore) { status = 'partial'; incompleteProducts += 1; note = 'Only the first page of reviews in the page data was read (' + raw.length + ' of ' + (r.reviewCount == null ? 'unknown' : r.reviewCount) + ' reported ratings/reviews). The purchase-experiences modal and its load-more/scroll were not opened: no verified browser or endpoint was available.'; }\n  else { status = 'complete'; note = 'Page data reports no further reviews (hasNext=false). Reported count counts ratings, which can exceed written reviews.'; }\n  summaryRows.push([r.title, r.productUrl, typeof r.reviewCount === 'number' ? r.reviewCount : '', raw.length, kept, raw.length - kept, status, note]);\n  sheetRows[idx][columns.length - 4] = r.reviewStatus || '';\n  sheetRows[idx][columns.length - 3] = raw.length;\n  sheetRows[idx][columns.length - 2] = kept;\n});\nconst wb = buildXlsx([\n  { name: 'Products', columns: columns, rows: sheetRows },\n  { name: 'Reviews', columns: reviewColumns, rows: reviewRows },\n  { name: 'Review_Summary', columns: summaryColumns, rows: summaryRows }\n]);\n// self-check: re-read the ZIP central directory of the generated bytes\nconst b = wb.bytes;\nfunction u16(o) { return b[o] | (b[o + 1] << 8); }\nfunction u32(o) { return (b[o] | (b[o + 1] << 8) | (b[o + 2] << 16) | (b[o + 3] << 24)) >>> 0; }\nconst eocd = b.length - 22;\nif (u32(eocd) !== 0x06054b50) throw new Error('Generated Excel file failed self-check: ZIP end record missing.');\nconst entryCount = u16(eocd + 10);\nlet p = u32(eocd + 16);\nconst names = [];\nfor (let i = 0; i < entryCount; i++) {\n  if (u32(p) !== 0x02014b50) throw new Error('Generated Excel file failed self-check: bad central directory.');\n  const nl = u16(p + 28);\n  names.push(String.fromCharCode.apply(null, b.slice(p + 46, p + 46 + nl)));\n  p += 46 + nl + u16(p + 30) + u16(p + 32);\n}\n['[Content_Types].xml', 'xl/workbook.xml', 'xl/worksheets/sheet1.xml', 'xl/worksheets/sheet2.xml', 'xl/worksheets/sheet3.xml', 'xl/styles.xml'].forEach(function (n) {\n  if (names.indexOf(n) < 0) throw new Error('Generated Excel file failed self-check: missing part ' + n);\n});\n// ---- validation: re-read the generated bytes (stored ZIP, no compression) ----\nfunction zipRead(name) {\n  let q = u32(eocd + 16);\n  for (let i = 0; i < entryCount; i++) {\n    const nl = u16(q + 28);\n    const nm = String.fromCharCode.apply(null, b.slice(q + 46, q + 46 + nl));\n    if (nm === name) {\n      const size = u32(q + 24), lo = u32(q + 42);\n      const start = lo + 30 + u16(lo + 26) + u16(lo + 28);\n      return Buffer.from(b.slice(start, start + size)).toString('utf8');\n    }\n    q += 46 + nl + u16(q + 30) + u16(q + 32);\n  }\n  return null;\n}\nconst wbXml = zipRead('xl/workbook.xml') || '';\n['Products', 'Reviews', 'Review_Summary'].forEach(function (n) {\n  if (wbXml.indexOf('<sheet name=\"' + n + '\"') < 0) throw new Error('Validation failed: worksheet ' + n + ' missing from workbook.');\n});\nconst revXml = zipRead('xl/worksheets/sheet2.xml') || '';\nconst sumXml = zipRead('xl/worksheets/sheet3.xml') || '';\nconst prodXml = zipRead('xl/worksheets/sheet1.xml') || '';\nconst revRowsWritten = (revXml.match(/<row r=/g) || []).length - 1;\nconst revTextCells = (revXml.match(/<c r=\"C(\\d+)\" s=\"\\d+\" t=\"inlineStr\"><is><t[^>]*>[^<]/g) || []).filter(function (m) { return !/^<c r=\"C1\"/.test(m); }).length;\nconst prodRowsWritten = (prodXml.match(/<row r=/g) || []).length - 1;\nconst sumRowsWritten = (sumXml.match(/<row r=/g) || []).length - 1;\nif (revRowsWritten !== reviewRows.length) throw new Error('Validation failed: Reviews sheet has ' + revRowsWritten + ' rows but ' + reviewRows.length + ' reviews were retained.');\nif (revTextCells !== reviewRows.length) throw new Error('Validation failed: only ' + revTextCells + ' of ' + reviewRows.length + ' review_text cells are populated.');\nif (prodRowsWritten !== sheetRows.length) throw new Error('Validation failed: Products sheet row count mismatch.');\nif (sumRowsWritten !== summaryRows.length) throw new Error('Validation failed: Review_Summary row count mismatch.');\nconst sampleOk = reviewRows.length === 0 || revXml.indexOf(xEsc(String(reviewRows[0][2]).slice(0, 40))) >= 0;\nif (!sampleOk) throw new Error('Validation failed: first retained review text not found inside the Reviews sheet XML.');\nconst requested = st.requested;\nconst sel = $('Selected Category Final').first().json.selected;\nreturn [{ json: {\n  fileSize: wb.size,\n  fileName: 'basalam_best_selling_products.xlsx',\n  sheetName: 'Products',\n  rowCount: sheetRows.length,\n  reviewRowCount: reviewRows.length,\n  summaryRowCount: summaryRows.length,\n  validation: { sheets: ['Products', 'Reviews', 'Review_Summary'], productRows: prodRowsWritten, reviewRowsWritten: revRowsWritten, reviewTextCellsPopulated: revTextCells, retainedReviews: reviewRows.length, summaryRows: sumRowsWritten },\n  incompleteProducts: incompleteProducts,\n  firstReviewText: reviewRows.length ? xEsc(String(reviewRows[0][2])) : '',\n  lastReviewText: reviewRows.length ? xEsc(String(reviewRows[reviewRows.length - 1][2])) : '',\n  reviewsFetched: reviewsFetchedTotal,\n  reviewsExcluded: reviewsExcludedTotal,\n  reviewsDuplicates: reviewsDupTotal,\n  hyperlinkCount: wb.linkCount,\n  zipEntries: names,\n  requested: requested,\n  collected: sheetRows.length,\n  truncatedDescriptions: truncated,\n  categoryTitle: sel.title,\n  listingUrl: sv.sortedUrl,\n  stopReason: loop.stopReason,\n  fileBase64: wb.base64\n} }];\n"
+      },
+      "id": "5281d7e5-5cc7-400d-a7b1-8aa60173791d",
+      "name": "Build Excel Workbook",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2912,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "fileBase64",
+        "options": {
+          "fileName": "={{ $json.fileName }}",
+          "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        }
+      },
+      "id": "123808c8-25c2-4bcf-8f6b-540890f1c9ac",
+      "name": "Convert To XLSX File",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        3136,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Builds the Persian product-info form page (re-shown with an error when validation fails)\nfunction esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;'); }\nconst cur = $input.first().json || {};\nconst err = cur.inputError || '';\nconst wb = $('Build Excel Workbook').first().json;\nlet html = '<div dir=\"rtl\" style=\"text-align:right\"><p>فایل اکسل «' + esc(wb.fileName) + '» با ' + esc(wb.collected) + ' محصول و ' + esc(wb.reviewRowCount) + ' ردیف نظر ساخته شد.</p>';\nhtml += '<p>برای تحلیل آگهی محصول خود بر اساس همین فایل، نام و توضیحات فعلی محصول را وارد کنید. پس از نمایش گزارش، فایل اکسل قابل دانلود است.</p>';\nif (err) html += '<p style=\"color:#b00020\"><b>' + esc(err) + '</b></p>';\nhtml += '</div>';\nreturn [{ json: { formFields: [\n  { fieldType: 'html', html: html },\n  { fieldLabel: 'نام محصول', fieldName: 'productTitle', fieldType: 'text', placeholder: 'نام پیشنهادی محصول شما', requiredField: true },\n  { fieldLabel: 'توضیحات محصول', fieldName: 'productDescription', fieldType: 'textarea', placeholder: 'توضیحات فعلی محصول شما', requiredField: true }\n] }, pairedItem: { item: 0 } }];\n"
+      },
+      "id": "03f873a6-7dff-4c98-a480-49e4031eb965",
+      "name": "Build Product Form",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3440,
+        688
+      ]
+    },
+    {
+      "parameters": {
+        "defineForm": "json",
+        "jsonOutput": "={{ JSON.stringify($json.formFields) }}",
+        "options": {
+          "formTitle": "تحلیل آگهی محصول",
+          "buttonLabel": "شروع تحلیل"
+        }
+      },
+      "id": "8fc5cebb-137e-4225-b99a-51af1e46b3f6",
+      "name": "Ask Product Info",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.5,
+      "position": [
+        3664,
+        496
+      ],
+      "webhookId": "45319e6c-973e-4b33-bafa-3b1721a6d99f"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Validates the two required fields and, when valid, attaches the workbook binary produced by Convert To XLSX File (read-only reference)\nconst input = $input.first().json || {};\nconst title = String(input.productTitle == null ? '' : input.productTitle).trim();\nconst desc = String(input.productDescription == null ? '' : input.productDescription).trim();\nconst letters = /[A-Za-z\\u0600-\\u06FF]/;\nconst errs = [];\nif (!title) errs.push('نام محصول خالی است.');\nelse if (title.length < 3 || !letters.test(title)) errs.push('نام محصول معتبر نیست؛ حداقل ۳ نویسه شامل حروف وارد کنید.');\nif (!desc) errs.push('توضیحات محصول خالی است.');\nelse if (desc.length < 10 || !letters.test(desc)) errs.push('توضیحات محصول معتبر نیست؛ حداقل ۱۰ نویسه شامل حروف وارد کنید.');\nif (errs.length) return [{ json: { inputValid: false, inputError: errs.join(' ') }, pairedItem: { item: 0 } }];\nconst wbItem = $('Convert To XLSX File').first();\nif (!wbItem.binary || !wbItem.binary.data) throw new Error('The workbook binary (property \"data\") produced by Convert To XLSX File is not available in this execution.');\nreturn [{ json: { inputValid: true, productTitle: title, productDescription: desc, workbookFileName: wbItem.binary.data.fileName || $('Build Excel Workbook').first().json.fileName }, binary: { data: wbItem.binary.data }, pairedItem: { item: 0 } }];\n"
+      },
+      "id": "ec56d2e0-0985-4c4a-9686-4985ef295072",
+      "name": "Validate Product Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3888,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.inputValid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "3c8e71d9-79ba-465b-b871-13cc25387deb",
+      "name": "Product Input Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        4112,
+        496
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "f3ee857a-87b7-4b74-a67e-b89a5067409c",
+      "name": "Workbook Ready",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        3968,
+        880
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "options": {
+          "headerRow": true,
+          "sheetName": "Products"
+        }
+      },
+      "id": "a7fe3e64-a124-43e3-ab1c-16d5be4ba14e",
+      "name": "Read Products Sheet",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        3920,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "options": {
+          "headerRow": true,
+          "sheetName": "Reviews"
+        }
+      },
+      "id": "17777384-035d-49ed-bca7-2481f9cde4cc",
+      "name": "Read Reviews Sheet",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        3920,
+        192
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "options": {
+          "headerRow": true,
+          "sheetName": "Review_Summary"
+        }
+      },
+      "id": "5de62b45-e943-46a0-9954-083e2379edaa",
+      "name": "Read Review Summary Sheet",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        3920,
+        688
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "completion",
+        "completionTitle": "هیچ محصولی جمع‌آوری نشد",
+        "completionMessage": "=فایلی ساخته نشد. دسته: {{ $(\"Selected Category Final\").first().json.selected.title }} ({{ $(\"Selected Category Final\").first().json.selected.url }}). علت: {{ $json.stopReason === \"no_more_products\" ? \"این دسته محصول در دسترسی نداشت.\" : \"صفحات فهرست قابل دریافت نبودند.\" }} جزئیات: {{ ($json.state.warnings || []).slice(0, 3).join(\" | \") }}",
+        "options": {}
+      },
+      "id": "2e02dfe9-602e-4331-809a-a327dfff8df7",
+      "name": "No Products Found",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.5,
+      "position": [
+        2608,
+        416
+      ],
+      "webhookId": "1111e658-46f4-4033-9de5-9918ed26de0a"
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "id": "bb1e6b55-1033-4b68-94d1-f401385a5450",
+      "name": "Polite Delay",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2976,
+        304
+      ],
+      "webhookId": "21de592b-884e-46ff-9cb9-b22cb3d54810"
+    },
+    {
+      "parameters": {
+        "operation": "completion",
+        "completionTitle": "مرتب‌سازی پرفروش‌ترین تأیید نشد",
+        "completionMessage": "=استخراج متوقف شد. علت: {{ $json.sortError }} | آدرس بررسی‌شده: {{ $json.sortedUrl }}",
+        "options": {}
+      },
+      "id": "b4d19bae-2363-4e17-a03d-67216cdf9ab3",
+      "name": "Sort Not Verified",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.5,
+      "position": [
+        1440,
+        0
+      ],
+      "webhookId": "1cfcb850-c056-4164-ab3b-03d7000e034a"
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "id": "a2726550-5f00-4cee-8bbc-bfce8575fb2a",
+      "name": "Combine Sheets",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        4192,
+        688
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Reads ALL rows of the three sheets, discovers real headers, removes price columns and splits products / reviews into size-bounded batches\nfunction rows(n) { return $(n).all().map(function (i) { return i.json; }).filter(function (j) { return j && Object.keys(j).length > 0; }); }\nfunction headers(list) { var s = {}; list.forEach(function (r) { Object.keys(r).forEach(function (k) { s[k] = true; }); }); return Object.keys(s); }\nfunction str(v) { return v === null || v === undefined ? '' : String(v).replace(/\\s+/g, ' ').trim(); }\nconst products = rows('Read Products Sheet');\nconst reviews = rows('Read Reviews Sheet');\nif (!products.length) throw new Error('The Products worksheet of the generated workbook has no data rows.');\nconst pH = headers(products), rH = headers(reviews);\nconst PRICE = /قیمت|تخفیف|ریال|تومان|price|discount/i;\nconst SKIP = /تصویر|image|زمان جمع|ویدیو/i;\nconst nameKey = pH.find(function (h) { return h.trim() === 'نام محصول'; }) || pH.find(function (h) { return /نام محصول|title|name/i.test(h); });\nconst urlKey = pH.find(function (h) { return h.indexOf('لینک محصول') >= 0; }) || pH.find(function (h) { return /url/i.test(h); });\nconst descKey = pH.find(function (h) { return h.indexOf('توضیحات') >= 0; });\nconst usedProductCols = pH.filter(function (h) { return !PRICE.test(h) && !SKIP.test(h); });\nconst excludedPriceCols = pH.filter(function (h) { return PRICE.test(h); });\nconst urlToCode = {}, nameToCode = {};\nconst DESC_MAX = 3000, FIELD_MAX = 1500;\nlet truncatedFields = 0;\nconst blocks = products.map(function (p, i) {\n  const code = 'P' + (i + 1);\n  if (urlKey && str(p[urlKey])) urlToCode[str(p[urlKey])] = code;\n  if (nameKey && str(p[nameKey])) nameToCode[str(p[nameKey])] = code;\n  const lines = ['### ' + code];\n  usedProductCols.forEach(function (h) {\n    let v = str(p[h]);\n    if (!v) return;\n    const max = h === descKey ? DESC_MAX : FIELD_MAX;\n    if (v.length > max) { v = v.slice(0, max) + ' …[کوتاه‌شده]'; truncatedFields += 1; }\n    lines.push(h + ': ' + v);\n  });\n  return lines.join('\\n');\n});\nconst textKey = rH.find(function (h) { return h.trim() === 'review_text'; }) || rH.find(function (h) { return /review_text|متن نظر/i.test(h); });\nconst rUrlKey = rH.find(function (h) { return h.trim() === 'product_url'; });\nconst rNameKey = rH.find(function (h) { return h.trim() === 'product_name'; });\nlet emptyText = 0, unmatched = 0;\nconst reviewLines = [];\nreviews.forEach(function (r, i) {\n  const t = textKey ? str(r[textKey]) : '';\n  if (!t) { emptyText += 1; return; }\n  let code = (rUrlKey && urlToCode[str(r[rUrlKey])]) || (rNameKey && nameToCode[str(r[rNameKey])]) || '';\n  if (!code) { code = 'P?'; unmatched += 1; }\n  const parts = ['[R' + (i + 1) + ']', code];\n  if (r.review_rating !== undefined && str(r.review_rating)) parts.push('امتیاز: ' + str(r.review_rating));\n  if (r.product_variant !== undefined && str(r.product_variant)) parts.push('تنوع: ' + str(r.product_variant));\n  if (r.verified_purchase !== undefined && str(r.verified_purchase)) parts.push('خرید تأییدشده: ' + str(r.verified_purchase));\n  parts.push('متن: ' + t);\n  reviewLines.push(parts.join(' | '));\n});\nfunction pack(list, budget) { const out = []; let cur = [], len = 0; list.forEach(function (x) { if (cur.length && len + x.length > budget) { out.push(cur); cur = []; len = 0; } cur.push(x); len += x.length + 1; }); if (cur.length) out.push(cur); return out; }\nconst pBatches = pack(blocks, 40000), rBatches = pack(reviewLines, 30000);\nconst meta = { productRows: products.length, productHeaders: pH, usedProductColumns: usedProductCols, excludedPriceColumns: excludedPriceCols, truncatedFieldsForAnalysis: truncatedFields, reviewRows: reviews.length, reviewHeaders: rH, reviewTextColumn: textKey || null, reviewsWithText: reviewLines.length, reviewsEmptyText: emptyText, reviewsUnmatchedToProduct: unmatched, productBatches: pBatches.length, reviewBatches: rBatches.length };\nconst out = [];\npBatches.forEach(function (b, i) { out.push({ json: { batchType: 'products', batchIndex: i + 1, batchCount: pBatches.length, itemCount: b.length, payload: b.join('\\n\\n'), meta: meta }, pairedItem: { item: 0 } }); });\nrBatches.forEach(function (b, i) { out.push({ json: { batchType: 'reviews', batchIndex: i + 1, batchCount: rBatches.length, itemCount: b.length, payload: b.join('\\n'), meta: meta }, pairedItem: { item: 0 } }); });\nreturn out;\n"
+      },
+      "id": "6ef2a6da-47e1-49f5-bb30-f6132a4c380f",
+      "name": "Build Analysis Batches",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4416,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=محصول کاربر:\nنام محصول: {{ $('Validate Product Input').first().json.productTitle }}\nتوضیحات محصول: {{ $('Validate Product Input').first().json.productDescription }}\n\nنوع دسته داده: {{ $json.batchType }} (دسته {{ $json.batchIndex }} از {{ $json.batchCount }}، {{ $json.itemCount }} ردیف)\n\n{{ $json.batchType === 'products' ? 'برای هر محصول (کد P#) فقط بر اساس داده‌های زیر این JSON را برگردان: {\"batch_type\":\"products\",\"products\":[{\"code\":\"P1\",\"comparable\":\"yes|partial|no\",\"reason\":\"دلیل کوتاه بر اساس نوع، کاربرد، جنس، ابعاد یا مشخصات تأییدشده\",\"title_pattern\":\"ساختار عنوان\",\"useful_title_elements\":[],\"description_strengths\":[],\"description_gaps\":[],\"verified_specs\":[]}]} — محصولی را فقط به خاطر کلمات مشابه در نام مشابه ندان.' : 'تمام نظرهای زیر را بخوان و این JSON را برگردان: {\"batch_type\":\"reviews\",\"reviews_analyzed\":0,\"themes\":[{\"theme\":\"عنوان موضوع\",\"category\":\"product_quality|performance|claims_vs_reality|dimensions_materials_appearance|compatibility_usability|defects_missing_parts|packaging|shipping|seller_service|other\",\"sentiment\":\"positive|negative|mixed|question\",\"mention_count\":0,\"product_codes\":[\"P1\"],\"evidence_review_ids\":[\"R1\"],\"paraphrase\":\"خلاصه بدون نقل‌قول ساختگی\"}],\"customer_questions\":[],\"isolated_comments\":[]} — mention_count فقط تعداد واقعی نظرهای این دسته است که به آن موضوع اشاره کرده‌اند. مشکلات محصول را از مشکلات فروشنده، بسته‌بندی و ارسال جدا کن.' }}\n\nداده‌ها:\n{{ $json.payload }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "تو تحلیلگر آگهی‌های فروشگاهی باسلام هستی. فقط بر اساس داده‌های داده‌شده کار کن. هیچ داده، نظر، برند، مدل، مشخصات یا گواهی‌ای از خودت نساز. هیچ تحلیل، مقایسه یا پیشنهادی درباره قیمت، تخفیف یا هزینه انجام نده و ارقام پولی را نادیده بگیر. خروجی فقط یک شیء JSON معتبر باشد، بدون متن اضافه."
+            }
+          ]
+        },
+        "batching": {
+          "batchSize": 3,
+          "delayBetweenBatches": 500
+        }
+      },
+      "id": "8c1c52db-d3a3-4643-82ff-c214d64ded07",
+      "name": "Analyze Batch",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        4640,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5.4-mini",
+          "cachedResultName": "gpt-5.4-mini"
+        },
+        "builtInTools": {},
+        "options": {
+          "timeout": 300000,
+          "maxRetries": 3
+        }
+      },
+      "id": "587362a5-6a84-45d1-9b7c-c7a9d2d0a450",
+      "name": "Batch Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        4720,
+        656
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "Gateway credits",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Combines every batch result and computes deterministic statistics from the workbook rows\nfunction rows(n) { return $(n).all().map(function (i) { return i.json; }).filter(function (j) { return j && Object.keys(j).length > 0; }); }\nfunction num(v) { const n = Number(String(v == null ? '' : v).replace(/[^0-9.-]/g, '')); return isFinite(n) && String(v).trim() !== '' ? n : null; }\nfunction parse(t) { t = String(t || ''); const a = t.indexOf('{'), b = t.lastIndexOf('}'); if (a < 0 || b <= a) return null; try { return JSON.parse(t.slice(a, b + 1)); } catch (e) { return null; } }\nconst batches = $('Build Analysis Batches').all().map(function (i) { return i.json; });\nconst outs = $input.all().map(function (i) { return i.json; });\nconst meta = batches[0].meta;\nconst productFindings = [], reviewFindings = [], parseFailures = [];\nouts.forEach(function (o, i) {\n  const b = batches[i] || {};\n  const p = parse(o.text);\n  if (!p) { parseFailures.push(b.batchType + ' #' + b.batchIndex); return; }\n  if (b.batchType === 'products') (p.products || []).forEach(function (x) { productFindings.push(x); });\n  else reviewFindings.push({ batch: b.batchIndex, reviewsInBatch: b.itemCount, reviews_analyzed: p.reviews_analyzed, themes: p.themes || [], customer_questions: p.customer_questions || [], isolated_comments: p.isolated_comments || [] });\n});\nconst products = rows('Read Products Sheet');\nconst reviews = rows('Read Reviews Sheet');\nconst summary = rows('Read Review Summary Sheet');\nconst pH = meta.productHeaders;\nconst nameKey = pH.find(function (h) { return h.trim() === 'نام محصول'; });\nconst urlKey = pH.find(function (h) { return h.indexOf('لینک محصول') >= 0; });\nconst sellerKey = pH.find(function (h) { return h.indexOf('فروشنده') >= 0; });\nconst ratingKey = pH.find(function (h) { return h.indexOf('امتیاز محصول') >= 0; });\nconst productIndex = products.map(function (p, i) { return { code: 'P' + (i + 1), name: nameKey ? p[nameKey] : '', url: urlKey ? p[urlKey] : '', seller: sellerKey ? p[sellerKey] : '', rating: ratingKey ? p[ratingKey] : '' }; });\nconst ratingDist = {};\nreviews.forEach(function (r) { const t = String(r[meta.reviewTextColumn] || '').trim(); if (!t) return; const k = num(r.review_rating); const key = k === null ? 'نامشخص' : String(k); ratingDist[key] = (ratingDist[key] || 0) + 1; });\nlet reported = 0, retrieved = 0, kept = 0, excluded = 0; const statusCounts = {};\nsummary.forEach(function (s) { reported += num(s.total_reviews_reported) || 0; retrieved += num(s.reviews_retrieved) || 0; kept += num(s.useful_reviews_kept) || 0; excluded += num(s.generic_reviews_excluded) || 0; const st = String(s.review_collection_status || 'نامشخص'); statusCounts[st] = (statusCounts[st] || 0) + 1; });\nconst comparable = productFindings.filter(function (x) { return x.comparable === 'yes' || x.comparable === 'partial'; });\nconst stats = {\n  workbookFile: $('Validate Product Input').first().json.workbookFileName,\n  productRowsRead: products.length,\n  reviewRowsRead: reviews.length,\n  reviewRowsWithText: meta.reviewsWithText,\n  reviewRowsEmptyText: meta.reviewsEmptyText,\n  reviewsUnmatchedToProduct: meta.reviewsUnmatchedToProduct,\n  reviewTextColumn: meta.reviewTextColumn,\n  ratingDistributionOfAnalyzedReviews: ratingDist,\n  reviewSummaryRows: summary.length,\n  totalReviewsReportedBySite: reported,\n  reviewsRetrieved: retrieved,\n  usefulReviewsKept: kept,\n  genericReviewsExcluded: excluded,\n  retrievalRatioPercent: reported > 0 ? Math.round((retrieved / reported) * 1000) / 10 : null,\n  reviewCollectionStatusCounts: statusCounts,\n  comparableProducts: comparable.length,\n  comparableYes: productFindings.filter(function (x) { return x.comparable === 'yes'; }).length,\n  comparablePartial: productFindings.filter(function (x) { return x.comparable === 'partial'; }).length,\n  productBatches: meta.productBatches,\n  reviewBatches: meta.reviewBatches,\n  batchParseFailures: parseFailures,\n  excludedPriceColumns: meta.excludedPriceColumns,\n  truncatedFieldsForAnalysis: meta.truncatedFieldsForAnalysis\n};\nconst user = $('Validate Product Input').first().json;\nconst analysisInput = JSON.stringify({ stats: stats, productIndex: productIndex, productFindings: productFindings, reviewFindings: reviewFindings });\nreturn [{ json: { productTitle: user.productTitle, productDescription: user.productDescription, stats: stats, analysisInput: analysisInput }, pairedItem: { item: 0 } }];\n"
+      },
+      "id": "8ded20dd-aa49-4067-b7f0-753aa3024214",
+      "name": "Consolidate Findings",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4992,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=نام فعلی محصول کاربر: {{ $json.productTitle }}\nتوضیحات فعلی محصول کاربر: {{ $json.productDescription }}\n\nداده‌های تحلیل‌شده از فایل اکسل تولیدشده (آمار قطعی، فهرست محصولات با کد P#، یافته‌های هر محصول و یافته‌های همه دسته‌های نظرات):\n{{ $json.analysisInput }}\n\nگزارش را به زبان فارسی رسمی و روان و فقط به صورت HTML ساده بنویس: فقط تگ‌های h2، h3، p، ul، li، b و blockquote (بدون جدول، html/head/body/script/style و بدون بلوک کد). بخش ۱ (مشخصات محصول) جداگانه ساخته می‌شود؛ آن را ننویس. دقیقاً این هفت بخش را، هر کدام با یک <h2> و با همین شماره و عنوان، بنویس و برای زیربخش‌ها از <h3> استفاده کن. پاراگراف‌ها کوتاه باشند و فهرست‌ها پرکاربرد.\n<h2>۲. خلاصه مدیریتی</h2>: مهم‌ترین یافته‌ها و قوی‌ترین فرصت‌های بهبود آگهی و رضایت مشتری (۴ تا ۶ بند).\n<h2>۳. تحلیل نظرات مشتریان</h2>: اندازه نمونه (تعداد ردیف‌های نظر تحلیل‌شده)، کامل یا ناقص بودن جمع‌آوری بر اساس stats؛ نکات مثبت پرتکرار و شکایات پرتکرار؛ کیفیت، دوام، عملکرد، جنس، ابعاد، ظاهر، سازگاری، بسته‌بندی، اقلام ناقص و ارسال فقط وقتی نظرات واقعی پشتیبانی می‌کنند؛ تفکیک الگوهای تکراری از نظرات تکی؛ تفکیک مشکلات محصول از فروشنده/بسته‌بندی/ارسال. فقط اگر مفید است چند نقل‌قول کوتاه در <blockquote> بیاور و فقط وقتی متن دقیق آن در داده‌ها آمده باشد؛ در غیر این صورت خلاصه کن و نقل‌قول نساز.\n<h2>۴. تحلیل محصولات مشابه و رقبا</h2>: تعداد محصولات واقعاً قابل مقایسه (با کد P#)، الگوهای عنوان، توضیحات و ویژگی‌های تأییدشده، شکاف‌ها و فرصت‌های بهبود آگهی کاربر. توضیحات رقبا را کپی نکن.\n<h2>۵. عنوان پیشنهادی محصول</h2>: عنوان پیشنهادی فارسی را در یک <p> جداگانه با <b> بیاور، سپس دلیل کوتاه برتری آن نسبت به عنوان فعلی.\n<h2>۶. توضیحات پیشنهادی محصول</h2>: توضیحات کامل و آماده استفاده با پاراگراف‌های خوانا و فهرست؛ فقط حقایق تأییدشده از ورودی کاربر یا داده‌ها؛ برای اطلاعات ناموجود جای‌خالی صریح مانند [ابعاد دقیق محصول را وارد کنید] بگذار.\n<h2>۷. برنامه عملیاتی پیشنهادی</h2>: اقدامات به ترتیب اولویت؛ برای هر اقدام یک <h3> با عنوان اقدام و سپس فهرستی شامل: شواهد پشتیبان (کد محصول یا تعداد نظر)، فایده مورد انتظار، اولویت (بالا/متوسط/پایین)، سطح اطمینان (بالا/متوسط/پایین)، و مسئول (در کنترل فروشنده / نیازمند تأمین‌کننده یا تولیدکننده / نیازمند شرکت ارسال).\n<h2>۸. محدودیت‌ها و میزان اطمینان</h2>: اطلاعات ناموجود، جمع‌آوری ناقص نظرات، نمونه کوچک و سایر محدودیت‌ها؛ با زیربخش‌های <h3> جداگانه برای «حقایق»، «استنباط‌ها» و «پیشنهادها».\nهرگز در هیچ بخشی به قیمت، مقایسه قیمت، محاسبه قیمت، تخفیف، هزینه یا راهبرد قیمت‌گذاری اشاره نکن.",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "تو مشاور بهینه‌سازی آگهی محصول در باسلام هستی. فقط از داده‌های داده‌شده استفاده کن. هیچ برند، مدل، مشخصات، گواهی، گارانتی، ویژگی، نظر یا نقل‌قولی از خودت نساز؛ اطلاعات ناموجود را با جای‌خالی داخل [] مشخص کن. توضیحات رقبا را کپی نکن. هیچ تحلیل یا پیشنهادی درباره قیمت، بازه قیمت یا تخفیف ارائه نده. تجربه نظرات رقبا را لزوماً به محصول کاربر تعمیم نده و محدودیت نمونه کوچک یا جمع‌آوری ناقص را صریحاً ذکر کن. بازاریابی فریبنده، ادعای گمراه‌کننده، ویژگی ساختگی، نظر یا امتیاز جعلی پیشنهاد نده. نقل‌قول فقط با عین متن موجود در داده‌ها مجاز است."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "id": "7734a060-c1f9-4797-a9fd-1ac1489db4df",
+      "name": "Write Final Report",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        5216,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5.4",
+          "cachedResultName": "gpt-5.4"
+        },
+        "builtInTools": {},
+        "options": {
+          "timeout": 300000,
+          "maxRetries": 3
+        }
+      },
+      "id": "0d2ba398-7bb1-463d-8d68-5cc9924ae7d7",
+      "name": "Report Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        5296,
+        656
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "Gateway credits",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Turns the model's report into a filtered list of blocks (used for both the on-screen page and the Word file). Section 1 is deterministic.\nfunction esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;'); }\nfunction decode(s) { return String(s).replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '\"').replace(/&#39;/g, \"'\").replace(/&zwnj;/g, '\\u200c').replace(/&amp;/g, '&'); }\nconst c = $('Consolidate Findings').first().json;\nconst s = c.stats;\nlet raw = String($input.first().json.text || '');\nraw = raw.replace(/```[a-zA-Z]*/g, '');\nraw = raw.replace(/<\\s*(script|style|iframe|object|embed)[^>]*>[\\s\\S]*?<\\s*\\/\\s*\\1\\s*>/gi, '');\nconst PRICE = /قیمت|تومان|ریال|تخفیف|ارزان|گران|هزینه|price|discount|\\bcost\\b/i;\nlet removed = 0;\nconst modelBlocks = [];\nconst re = /<(h[1-6]|p|li|blockquote)\\b[^>]*>([\\s\\S]*?)<\\/\\1\\s*>/gi;\nlet m;\nwhile ((m = re.exec(raw))) {\n  const tag = m[1].toLowerCase();\n  const inner = m[2].replace(/<br\\s*\\/?>/gi, '\\n').replace(/<\\/(p|li|div)>/gi, '\\n');\n  const runs = [];\n  let bold = false;\n  inner.split(/(<\\/?(?:b|strong)\\b[^>]*>)/i).forEach(function (p) {\n    if (/^<\\/?(b|strong)\\b/i.test(p)) { bold = !/^<\\//.test(p); return; }\n    const t = decode(p.replace(/<[^>]+>/g, '')).replace(/[ \\t]+/g, ' ').replace(/\\n\\s*\\n+/g, '\\n');\n    if (t) runs.push({ t: t, b: bold });\n  });\n  const text = runs.map(function (r) { return r.t; }).join('').trim();\n  if (!text) continue;\n  if (PRICE.test(text)) { removed += 1; continue; }\n  if (runs.length) { runs[0].t = runs[0].t.replace(/^\\s+/, ''); runs[runs.length - 1].t = runs[runs.length - 1].t.replace(/\\s+$/, ''); }\n  const type = (tag === 'h1' || tag === 'h2') ? 'h1' : /^h[3-6]$/.test(tag) ? 'h2' : tag === 'li' ? 'li' : tag === 'blockquote' ? 'quote' : 'p';\n  modelBlocks.push({ type: type, runs: runs });\n}\nif (!modelBlocks.length) {\n  decode(raw.replace(/<[^>]+>/g, '\\n')).split(/\\n+/).map(function (t) { return t.trim(); }).filter(Boolean).forEach(function (t) {\n    if (PRICE.test(t)) { removed += 1; return; }\n    modelBlocks.push({ type: 'p', runs: [{ t: t, b: false }] });\n  });\n}\nif (!modelBlocks.length) throw new Error('The report model returned no usable content, so no report can be built.');\nlet reportDate = '';\ntry { reportDate = new Intl.DateTimeFormat('fa-IR-u-ca-persian', { dateStyle: 'long', timeZone: 'Asia/Tehran' }).format(new Date()); } catch (e) { reportDate = ''; }\nconst iso = new Date().toISOString().slice(0, 10);\nreportDate = reportDate ? reportDate + ' (' + iso + ')' : iso;\nfunction P(label, value) { return { type: 'p', runs: [{ t: label, b: true }, { t: String(value == null ? '' : value), b: false }] }; }\nconst blocks = [];\nblocks.push({ type: 'title', runs: [{ t: 'گزارش تحلیل محصول', b: true }] });\nblocks.push({ type: 'h1', runs: [{ t: '۱. عنوان گزارش و مشخصات محصول', b: false }] });\nblocks.push(P('عنوان پیشنهادی کاربر: ', c.productTitle));\nblocks.push({ type: 'p', runs: [{ t: 'توضیحات ارائه‌شده توسط کاربر:', b: true }] });\nString(c.productDescription || '').split(/\\n+/).map(function (t) { return t.trim(); }).filter(Boolean).forEach(function (t) { blocks.push({ type: 'quote', runs: [{ t: t, b: false }] }); });\nblocks.push(P('تاریخ تهیه گزارش: ', reportDate));\nblocks.push(P('فایل اکسل مبنای تحلیل: ', s.workbookFile));\nblocks.push({ type: 'li', runs: [{ t: 'ردیف‌های برگه Products: ' + s.productRowsRead + ' (قابل مقایسه: ' + s.comparableProducts + ')', b: false }] });\nblocks.push({ type: 'li', runs: [{ t: 'ردیف‌های برگه Reviews: ' + s.reviewRowsRead + ' (دارای متن و تحلیل‌شده: ' + s.reviewRowsWithText + ')', b: false }] });\nblocks.push({ type: 'li', runs: [{ t: 'برگه Review_Summary: ' + s.reviewSummaryRows + ' ردیف؛ نظرات گزارش‌شده در سایت: ' + s.totalReviewsReportedBySite + '، دریافت‌شده: ' + s.reviewsRetrieved + (s.retrievalRatioPercent !== null ? ' (' + s.retrievalRatioPercent + '٪)' : ''), b: false }] });\nmodelBlocks.forEach(function (b) { blocks.push(b); });\nconst notes = [];\nif (removed) notes.push(removed + ' بند از متن تولیدشده چون خارج از دامنه مجاز این گزارش بود حذف شد.');\nif (s.batchParseFailures && s.batchParseFailures.length) notes.push('خروجی تحلیل این دسته‌ها قابل خواندن نبود و در گزارش لحاظ نشد: ' + s.batchParseFailures.join('، '));\nnotes.forEach(function (n) { blocks.push({ type: 'p', runs: [{ t: 'یادداشت سیستم: ', b: true }, { t: n, b: false }] }); });\nfunction runsHtml(r) { return r.map(function (x) { const t = esc(x.t).split('\\n').join('<br>'); return x.b ? '<b>' + t + '</b>' : t; }).join(''); }\nlet html = '<div dir=\"rtl\" style=\"text-align:right;line-height:1.8\">';\nlet inList = false;\nblocks.forEach(function (b) {\n  if (b.type === 'li' && !inList) { html += '<ul>'; inList = true; }\n  if (b.type !== 'li' && inList) { html += '</ul>'; inList = false; }\n  const r = runsHtml(b.runs);\n  if (b.type === 'title') html += '<h1>' + r + '</h1>';\n  else if (b.type === 'h1') html += '<h2>' + r + '</h2>';\n  else if (b.type === 'h2') html += '<h3>' + r + '</h3>';\n  else if (b.type === 'li') html += '<li>' + r + '</li>';\n  else if (b.type === 'quote') html += '<blockquote>' + r + '</blockquote>';\n  else html += '<p>' + r + '</p>';\n});\nif (inList) html += '</ul>';\nhtml += '<p style=\"color:#666\">در صفحه بعد، فایل اکسل نهایی و گزارش Word همین تحلیل برای دانلود ارائه می‌شود. فایل اکسل اصلی تغییری نکرده است.</p></div>';\nreturn [{ json: { reportHtml: html, blocks: blocks, blocksRemoved: removed, reportDate: reportDate, formFields: [{ fieldType: 'html', html: html }] }, pairedItem: { item: 0 } }];\n"
+      },
+      "id": "e358c58d-65db-433a-a627-31afa4c32389",
+      "name": "Prepare Report Page",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5568,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "defineForm": "json",
+        "jsonOutput": "={{ JSON.stringify($json.formFields) }}",
+        "options": {
+          "formTitle": "گزارش تحلیل آگهی محصول",
+          "buttonLabel": "دانلود فایل اکسل و گزارش Word"
+        }
+      },
+      "id": "18e133ce-6a35-4522-b517-1b7c38a71179",
+      "name": "Show Analysis Report",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.5,
+      "position": [
+        5792,
+        432
+      ],
+      "webhookId": "7026458a-5bb4-4a7b-9d6a-721e01dfb006"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Builds a genuine .docx (Office Open XML in a ZIP container) from the report blocks, with right-to-left Persian paragraphs, then self-checks it\nconst d = $('Prepare Report Page').first().json;\nconst blocks = d.blocks || [];\nif (!blocks.length) throw new Error('No report content to write into the Word file.');\nfunction x(s) { return String(s == null ? '' : s).replace(/[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F]/g, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;'); }\nfunction runXml(r) {\n  const rpr = '<w:rPr>' + (r.b ? '<w:b/><w:bCs/>' : '') + '<w:rtl/></w:rPr>';\n  return String(r.t).split('\\n').map(function (t, i) { return (i ? '<w:r><w:br/></w:r>' : '') + '<w:r>' + rpr + '<w:t xml:space=\"preserve\">' + x(t) + '</w:t></w:r>'; }).join('');\n}\nconst STYLE = { title: 'Title', h1: 'Heading1', h2: 'Heading2', quote: 'Quote', li: 'ListParagraph', p: 'Normal' };\nlet body = '';\nblocks.forEach(function (b) {\n  const runs = (b.runs || []).slice();\n  if (b.type === 'li') runs.unshift({ t: '• ', b: false });\n  body += '<w:p><w:pPr><w:pStyle w:val=\"' + (STYLE[b.type] || 'Normal') + '\"/><w:bidi/></w:pPr>' + runs.map(runXml).join('') + '</w:p>';\n});\nconst NS = 'xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"';\nconst documentXml = '<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><w:document ' + NS + '><w:body>' + body + '<w:sectPr><w:pgSz w:w=\"11906\" w:h=\"16838\"/><w:pgMar w:top=\"1134\" w:right=\"1134\" w:bottom=\"1134\" w:left=\"1134\" w:header=\"708\" w:footer=\"708\" w:gutter=\"0\"/><w:bidi/></w:sectPr></w:body></w:document>';\nfunction st(id, name, ppr, rpr, extra) { return '<w:style w:type=\"paragraph\"' + (id === 'Normal' ? ' w:default=\"1\"' : '') + ' w:styleId=\"' + id + '\"><w:name w:val=\"' + name + '\"/>' + (id !== 'Normal' ? '<w:basedOn w:val=\"Normal\"/><w:next w:val=\"Normal\"/>' : '') + (extra || '') + '<w:pPr>' + ppr + '</w:pPr><w:rPr>' + rpr + '</w:rPr></w:style>'; }\nconst stylesXml = '<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\">'\n  + '<w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii=\"Tahoma\" w:hAnsi=\"Tahoma\" w:eastAsia=\"Tahoma\" w:cs=\"Tahoma\"/><w:sz w:val=\"22\"/><w:szCs w:val=\"22\"/><w:lang w:val=\"en-US\" w:bidi=\"fa-IR\"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:bidi/><w:spacing w:after=\"120\" w:line=\"320\" w:lineRule=\"auto\"/></w:pPr></w:pPrDefault></w:docDefaults>'\n  + st('Normal', 'Normal', '<w:bidi/>', '<w:rtl/>', '<w:qFormat/>')\n  + st('Title', 'Title', '<w:keepNext/><w:bidi/><w:spacing w:after=\"240\"/><w:jc w:val=\"center\"/>', '<w:b/><w:bCs/><w:color w:val=\"1F3864\"/><w:sz w:val=\"40\"/><w:szCs w:val=\"40\"/><w:rtl/>', '<w:qFormat/>')\n  + st('Heading1', 'heading 1', '<w:keepNext/><w:pBdr><w:bottom w:val=\"single\" w:sz=\"6\" w:space=\"1\" w:color=\"9CC2E5\"/></w:pBdr><w:bidi/><w:spacing w:before=\"360\" w:after=\"120\"/><w:outlineLvl w:val=\"0\"/>', '<w:b/><w:bCs/><w:color w:val=\"1F4E79\"/><w:sz w:val=\"30\"/><w:szCs w:val=\"30\"/><w:rtl/>', '<w:qFormat/>')\n  + st('Heading2', 'heading 2', '<w:keepNext/><w:bidi/><w:spacing w:before=\"240\" w:after=\"80\"/><w:outlineLvl w:val=\"1\"/>', '<w:b/><w:bCs/><w:color w:val=\"2E74B5\"/><w:sz w:val=\"26\"/><w:szCs w:val=\"26\"/><w:rtl/>', '<w:qFormat/>')\n  + st('Quote', 'Quote', '<w:shd w:val=\"clear\" w:color=\"auto\" w:fill=\"F2F2F2\"/><w:bidi/><w:spacing w:before=\"60\" w:after=\"60\"/>', '<w:color w:val=\"404040\"/><w:rtl/>', '<w:qFormat/>')\n  + st('ListParagraph', 'List Paragraph', '<w:bidi/><w:spacing w:after=\"60\"/><w:ind w:left=\"360\" w:right=\"360\"/>', '<w:rtl/>', '<w:qFormat/>')\n  + '</w:styles>';\nconst contentTypes = '<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\"><Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/><Default Extension=\"xml\" ContentType=\"application/xml\"/><Override PartName=\"/word/document.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml\"/><Override PartName=\"/word/styles.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml\"/><Override PartName=\"/docProps/core.xml\" ContentType=\"application/vnd.openxmlformats-package.core-properties+xml\"/></Types>';\nconst rootRels = '<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument\" Target=\"word/document.xml\"/><Relationship Id=\"rId2\" Type=\"http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties\" Target=\"docProps/core.xml\"/></Relationships>';\nconst docRels = '<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles\" Target=\"styles.xml\"/></Relationships>';\nconst nowIso = new Date().toISOString().replace(/\\.\\d+Z$/, 'Z');\nconst coreXml = '<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><cp:coreProperties xmlns:cp=\"http://schemas.openxmlformats.org/package/2006/metadata/core-properties\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns:dcterms=\"http://purl.org/dc/terms/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><dc:title>' + x('گزارش تحلیل محصول') + '</dc:title><dc:language>fa-IR</dc:language><dcterms:created xsi:type=\"dcterms:W3CDTF\">' + nowIso + '</dcterms:created></cp:coreProperties>';\nconst CRC_TABLE = (function () { const t = []; for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();\nfunction crc32(buf) { let c = 0xFFFFFFFF; for (let i = 0; i < buf.length; i++) c = CRC_TABLE[(c ^ buf[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }\nfunction zipStore(files) {\n  const locals = [], centrals = []; let offset = 0;\n  files.forEach(function (f) {\n    const name = Buffer.from(f.name, 'utf8'), data = Buffer.from(f.content, 'utf8'), crc = crc32(data);\n    const h = Buffer.alloc(30); h.writeUInt32LE(0x04034b50, 0); h.writeUInt16LE(20, 4); h.writeUInt16LE(0x0800, 6); h.writeUInt16LE(0, 8); h.writeUInt16LE(0, 10); h.writeUInt16LE(0x21, 12); h.writeUInt32LE(crc, 14); h.writeUInt32LE(data.length, 18); h.writeUInt32LE(data.length, 22); h.writeUInt16LE(name.length, 26); h.writeUInt16LE(0, 28);\n    const c = Buffer.alloc(46); c.writeUInt32LE(0x02014b50, 0); c.writeUInt16LE(20, 4); c.writeUInt16LE(20, 6); c.writeUInt16LE(0x0800, 8); c.writeUInt16LE(0, 10); c.writeUInt16LE(0, 12); c.writeUInt16LE(0x21, 14); c.writeUInt32LE(crc, 16); c.writeUInt32LE(data.length, 20); c.writeUInt32LE(data.length, 24); c.writeUInt16LE(name.length, 28); c.writeUInt32LE(offset, 42);\n    locals.push(h, name, data); centrals.push(c, name);\n    offset += 30 + name.length + data.length;\n  });\n  const cd = Buffer.concat(centrals);\n  const e = Buffer.alloc(22); e.writeUInt32LE(0x06054b50, 0); e.writeUInt16LE(files.length, 8); e.writeUInt16LE(files.length, 10); e.writeUInt32LE(cd.length, 12); e.writeUInt32LE(offset, 16);\n  return Buffer.concat(locals.concat([cd, e]));\n}\nconst files = [\n  { name: '[Content_Types].xml', content: contentTypes },\n  { name: '_rels/.rels', content: rootRels },\n  { name: 'word/document.xml', content: documentXml },\n  { name: 'word/_rels/document.xml.rels', content: docRels },\n  { name: 'word/styles.xml', content: stylesXml },\n  { name: 'docProps/core.xml', content: coreXml }\n];\nconst buf = zipStore(files);\n// self-check: walk the central directory and confirm every part is present and the document holds the report\nconst eo = buf.length - 22;\nif (buf.readUInt32LE(eo) !== 0x06054b50) throw new Error('Word file self-check failed: ZIP end record missing.');\nconst count = buf.readUInt16LE(eo + 10);\nlet p = buf.readUInt32LE(eo + 16); const names = [];\nfor (let i = 0; i < count; i++) { if (buf.readUInt32LE(p) !== 0x02014b50) throw new Error('Word file self-check failed: bad central directory.'); const nl = buf.readUInt16LE(p + 28); names.push(buf.slice(p + 46, p + 46 + nl).toString('utf8')); p += 46 + nl; }\nfiles.forEach(function (f) { if (names.indexOf(f.name) < 0) throw new Error('Word file self-check failed: missing part ' + f.name); });\nconst paragraphs = (documentXml.match(/<w:p>/g) || []).length;\nconst headings = blocks.filter(function (b) { return b.type === 'h1'; }).length;\nif (paragraphs !== blocks.length || headings < 2) throw new Error('Word file self-check failed: expected report sections are missing.');\nreturn [{ json: { wordBase64: buf.toString('base64'), wordFileName: 'product_analysis_report.docx', wordBytes: buf.length, wordParagraphs: paragraphs, wordSections: headings, wordParts: names }, pairedItem: { item: 0 } }];\n"
+      },
+      "id": "c0e24bb8-3525-434c-a227-d67af6fc9adf",
+      "name": "Build Word Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4720,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "wordBase64",
+        "options": {
+          "fileName": "product_analysis_report.docx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        }
+      },
+      "id": "b522c50f-051b-4032-bf36-30dd97731bb3",
+      "name": "Convert Word To File",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        4944,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Puts the original, unmodified workbook binary (from Convert To XLSX File) and the Word report side by side and checks both before delivery\nconst wb = $('Convert To XLSX File').first().binary;\nconst wd = $input.first().binary;\nif (!wb || !wb.data) throw new Error('The Excel workbook binary from Convert To XLSX File is not available.');\nif (!wd || !wd.data) throw new Error('The Word report binary is not available.');\nconst xlsx = Object.assign({}, wb.data);\nconst docx = Object.assign({}, wd.data, { fileName: 'product_analysis_report.docx', fileExtension: 'docx', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });\nconst meta = $('Build Word Report').first().json;\nreturn [{ json: { excelFileName: xlsx.fileName, wordFileName: docx.fileName, wordBytes: meta.wordBytes, wordSections: meta.wordSections }, binary: { excel: xlsx, word: docx }, pairedItem: { item: 0 } }];\n"
+      },
+      "id": "ce484f73-9ce7-4d43-b592-907d5d895722",
+      "name": "Reattach Workbook",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6016,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "compress",
+        "binaryPropertyName": "excel,word",
+        "fileName": "basalam_product_research_results.zip"
+      },
+      "id": "637b739d-3726-4cf4-ba64-aef979927d1e",
+      "name": "Bundle Downloads",
+      "type": "n8n-nodes-base.compression",
+      "typeVersion": 1.1,
+      "position": [
+        5392,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "completion",
+        "respondWith": "returnBinary",
+        "completionTitle": "فایل اکسل نهایی و گزارش Word آماده است",
+        "completionMessage": "=فایل دانلودشده (basalam_product_research_results.zip) شامل دو فایل است: «دانلود فایل اکسل نهایی» ← {{ $(\"Reattach Workbook\").first().json.excelFileName }} و «دانلود گزارش تحلیل محصول (Word)» ← product_analysis_report.docx. تعداد {{ $(\"Build Excel Workbook\").first().json.collected }} محصول در فایل اکسل ذخیره شد. برای مشاهده قیمت‌ها، توضیحات و سایر مشخصات، فایل اکسل را باز کنید (نظرهای مفید خریداران در برگه Reviews و وضعیت جمع‌آوری هر محصول در برگه Review_Summary است). {{ $(\"Build Excel Workbook\").first().json.reviewsFetched }} نظر خوانده و {{ $(\"Build Excel Workbook\").first().json.reviewRowCount }} نظر مفید ثبت شد؛ نظرات {{ $(\"Build Excel Workbook\").first().json.incompleteProducts }} محصول ناقص است (فقط نظرات صفحه اول قابل دریافت بود).{{ $(\"Build Excel Workbook\").first().json.collected < $(\"Build Excel Workbook\").first().json.requested ? \" (تعداد درخواستی \" + $(\"Build Excel Workbook\").first().json.requested + \" بود؛ فهرست محصول یکتای بیشتری نداشت.)\" : \"\" }}",
+        "options": {}
+      },
+      "id": "ff87123d-0ae3-4bdb-97f3-322cf873502f",
+      "name": "Deliver Excel File",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.5,
+      "position": [
+        3360,
+        496
+      ],
+      "webhookId": "02b41ad0-2781-43b8-97c3-fc5af17666d8"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Start Research": {
+      "main": [
+        [
+          {
+            "node": "Fetch Category Home",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Category Home": {
+      "main": [
+        [
+          {
+            "node": "Extract Main Categories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Main Categories": {
+      "main": [
+        [
+          {
+            "node": "Fetch Main Category Pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Main Category Pages": {
+      "main": [
+        [
+          {
+            "node": "Build Category Tree",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Category Tree": {
+      "main": [
+        [
+          {
+            "node": "Build Selection Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Selection Page": {
+      "main": [
+        [
+          {
+            "node": "Ask Category",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ask Category": {
+      "main": [
+        [
+          {
+            "node": "Resolve Selection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve Selection": {
+      "main": [
+        [
+          {
+            "node": "Selection Resolved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Selection Resolved?": {
+      "main": [
+        [
+          {
+            "node": "Current Category",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Selection Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Current Category": {
+      "main": [
+        [
+          {
+            "node": "Fetch Selected Category",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Selected Category": {
+      "main": [
+        [
+          {
+            "node": "Read Subcategories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Subcategories": {
+      "main": [
+        [
+          {
+            "node": "Has Subcategories?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Subcategories?": {
+      "main": [
+        [
+          {
+            "node": "Ask Scope",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Selected Category Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ask Scope": {
+      "main": [
+        [
+          {
+            "node": "Apply Scope",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apply Scope": {
+      "main": [
+        [
+          {
+            "node": "Drill Into Subcategory?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Drill Into Subcategory?": {
+      "main": [
+        [
+          {
+            "node": "Current Category",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Selected Category Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Selected Category Final": {
+      "main": [
+        [
+          {
+            "node": "Build Sorted Listing URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Sorted Listing URL": {
+      "main": [
+        [
+          {
+            "node": "Fetch Sorted Listing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Sorted Listing": {
+      "main": [
+        [
+          {
+            "node": "Verify Sort",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Sort": {
+      "main": [
+        [
+          {
+            "node": "Sort Verified?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sort Verified?": {
+      "main": [
+        [
+          {
+            "node": "Build Count Page",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Sort Not Verified",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Count Page": {
+      "main": [
+        [
+          {
+            "node": "Ask Product Count",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ask Product Count": {
+      "main": [
+        [
+          {
+            "node": "Validate Count",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Count": {
+      "main": [
+        [
+          {
+            "node": "Count Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Count Valid?": {
+      "main": [
+        [
+          {
+            "node": "Init Listing State",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Count Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Init Listing State": {
+      "main": [
+        [
+          {
+            "node": "Plan Next Listing Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan Next Listing Page": {
+      "main": [
+        [
+          {
+            "node": "Fetch Listing Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Listing Page": {
+      "main": [
+        [
+          {
+            "node": "Parse Listing Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Listing Page": {
+      "main": [
+        [
+          {
+            "node": "Listing Complete?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Listing Complete?": {
+      "main": [
+        [
+          {
+            "node": "Has Products?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Polite Delay",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Products?": {
+      "main": [
+        [
+          {
+            "node": "Prepare Product Requests",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Products Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Product Requests": {
+      "main": [
+        [
+          {
+            "node": "Fetch Product Pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Product Pages": {
+      "main": [
+        [
+          {
+            "node": "Parse Product Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Product Details": {
+      "main": [
+        [
+          {
+            "node": "Build Excel Workbook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Excel Workbook": {
+      "main": [
+        [
+          {
+            "node": "Convert To XLSX File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert To XLSX File": {
+      "main": [
+        [
+          {
+            "node": "Build Product Form",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Product Form": {
+      "main": [
+        [
+          {
+            "node": "Ask Product Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ask Product Info": {
+      "main": [
+        [
+          {
+            "node": "Validate Product Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Product Input": {
+      "main": [
+        [
+          {
+            "node": "Product Input Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Product Input Valid?": {
+      "main": [
+        [
+          {
+            "node": "Workbook Ready",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Product Form",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workbook Ready": {
+      "main": [
+        [
+          {
+            "node": "Read Products Sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read Reviews Sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read Review Summary Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Products Sheet": {
+      "main": [
+        [
+          {
+            "node": "Combine Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Reviews Sheet": {
+      "main": [
+        [
+          {
+            "node": "Combine Sheets",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Read Review Summary Sheet": {
+      "main": [
+        [
+          {
+            "node": "Combine Sheets",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Polite Delay": {
+      "main": [
+        [
+          {
+            "node": "Plan Next Listing Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Sheets": {
+      "main": [
+        [
+          {
+            "node": "Build Analysis Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Analysis Batches": {
+      "main": [
+        [
+          {
+            "node": "Analyze Batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Batch": {
+      "main": [
+        [
+          {
+            "node": "Consolidate Findings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Batch Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Analyze Batch",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consolidate Findings": {
+      "main": [
+        [
+          {
+            "node": "Write Final Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Final Report": {
+      "main": [
+        [
+          {
+            "node": "Prepare Report Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Report Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Write Final Report",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Report Page": {
+      "main": [
+        [
+          {
+            "node": "Show Analysis Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Show Analysis Report": {
+      "main": [
+        [
+          {
+            "node": "Build Word Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Word Report": {
+      "main": [
+        [
+          {
+            "node": "Convert Word To File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert Word To File": {
+      "main": [
+        [
+          {
+            "node": "Reattach Workbook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reattach Workbook": {
+      "main": [
+        [
+          {
+            "node": "Bundle Downloads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bundle Downloads": {
+      "main": [
+        [
+          {
+            "node": "Deliver Excel File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "9f9492da-2f04-4661-a3c2-6b6357230507",
+  "meta": {
+    "instanceId": "f68c535a550bacee5c98e043b99153ed839abfad92bea669eb10a7579e46e39c"
+  },
+  "nodeGroups": [
+    {
+      "id": "3b4fd748-f2f5-484a-9c01-9b358cb8cfc9",
+      "name": "Discover categories",
+      "nodeIds": [
+        "16bf6938-4c65-4f04-9c6d-b1abfac7a7db",
+        "e34f44dc-6fc7-4f99-b920-d1d2c4cccf35",
+        "74ebd33d-6271-4106-a7d4-eda96c259f7f",
+        "5961ff9b-51d7-4174-8885-0c6e94231396"
+      ],
+      "description": "Reads the live Home & Kitchen page and each main category to build a numbered, de-duplicated category tree"
+    },
+    {
+      "id": "b8dce4be-cda1-4b9f-a566-db52c5027a01",
+      "name": "Choose category",
+      "nodeIds": [
+        "dd742a46-3fba-43fe-86bd-149bc254b6bc",
+        "917cf2d7-547e-4792-85fe-5aac43a5d4d4",
+        "91ac1b63-a032-4ae5-b2e6-79c76e0cd4a4",
+        "7bcfa81a-1209-421c-bffe-a5daf49fd1c0",
+        "6635ccde-6a50-441c-931e-a2c30a763c24",
+        "f96d2629-d77a-421b-9d47-299038049fa6",
+        "2c63353e-ad12-48ac-8dec-bd09cad91402",
+        "b902ead0-8632-4b69-8238-26c7e67d05da",
+        "4361a5d6-4538-4e61-a7bf-0a285175442f",
+        "5f097389-ead7-410f-be7d-49509153e754",
+        "dbe36466-3bb6-41b6-bfd5-8d4530083575",
+        "4cd38b2d-6e4e-4f9b-9173-610ba327845b",
+        "c3d26471-5d21-4def-8a1b-37cfadb12020",
+        "43f484a2-2940-4d2d-8122-567becc8e6ac",
+        "5d159f34-16c6-48c9-80f5-a2010fd7b0f2",
+        "d49e8d38-63ff-4bfa-8092-9fd31403fb6b"
+      ],
+      "description": "Numbered category list, drill-down to a subcategory, then loads the listing with sortId=sales and checks the page reports best-selling"
+    },
+    {
+      "id": "25dc8c71-2a80-4202-aca2-49da1b8ba34e",
+      "name": "Ask product count",
+      "nodeIds": [
+        "c282f749-78b0-4c81-bfd6-e9180b747220",
+        "70248968-7756-43f6-b2b8-13510d30841e",
+        "663e5c9c-82d4-4cab-8a9f-0dcfd6509f55",
+        "61cc2716-2f9d-44ef-bc13-03b68792b2c2"
+      ],
+      "description": "Asks how many products to collect, validating a positive integer (max 100) and re-asking when invalid"
+    },
+    {
+      "id": "6f916bfa-8cd0-4d06-8af8-16e498668168",
+      "name": "Collect listings",
+      "nodeIds": [
+        "010da47d-ba0f-4642-9f7c-c10d00091d5d",
+        "a073eced-e0ac-4289-a4fa-0fc12e731267",
+        "1d2dfa7f-4b48-4ccb-ab25-711ddb2ec683",
+        "192db8eb-77ab-4888-827c-74cf711baba9",
+        "4e29132b-4fa1-47a2-88bf-d77c637cdec2",
+        "bb1e6b55-1033-4b68-94d1-f401385a5450"
+      ],
+      "description": "Pages through category listings with delays, de-duplicating by product ID until the target count or the end"
+    },
+    {
+      "id": "67b9be87-2be1-4b5a-a61d-fe20f7f1d55d",
+      "name": "Scrape product pages",
+      "nodeIds": [
+        "c8eb64c9-3fbf-4ea7-9570-9448cb26157a",
+        "ff9aeee6-e4da-4e39-929a-055a3e629b81",
+        "9372023e-41a2-48f3-bb03-65ebc1e9cf5a",
+        "4d87b1ad-5c4d-4f64-9447-5c862f276c2a",
+        "2e02dfe9-602e-4331-809a-a327dfff8df7"
+      ],
+      "description": "Visits each public product page for description, specs, variants, seller and shipping; stops with a clear message if none found"
+    },
+    {
+      "id": "761aa342-cfaa-4c06-8382-5bd2cd90a53c",
+      "name": "Export Excel file",
+      "nodeIds": [
+        "5281d7e5-5cc7-400d-a7b1-8aa60173791d",
+        "123808c8-25c2-4bcf-8f6b-540890f1c9ac"
+      ],
+      "description": "Writes Products, Reviews and Review_Summary sheets into a real .xlsx and checks the file before analysis and download"
+    },
+    {
+      "id": "5f09aedf-4a7c-49b4-b166-ef24dd376a8a",
+      "name": "Collect product details",
+      "nodeIds": [
+        "03f873a6-7dff-4c98-a480-49e4031eb965",
+        "8fc5cebb-137e-4225-b99a-51af1e46b3f6",
+        "ec56d2e0-0985-4c4a-9686-4985ef295072",
+        "3c8e71d9-79ba-465b-b871-13cc25387deb"
+      ],
+      "description": "Asks for the seller's product title and description in Persian, re-asking until both are filled in properly"
+    },
+    {
+      "id": "5029a24e-7a21-449c-8389-0b33c242d732",
+      "name": "Build listing report",
+      "nodeIds": [
+        "f3ee857a-87b7-4b74-a67e-b89a5067409c",
+        "a7fe3e64-a124-43e3-ab1c-16d5be4ba14e",
+        "17777384-035d-49ed-bca7-2481f9cde4cc",
+        "5de62b45-e943-46a0-9954-083e2379edaa",
+        "a2726550-5f00-4cee-8bbc-bfce8575fb2a",
+        "6ef2a6da-47e1-49f5-bb30-f6132a4c380f",
+        "8c1c52db-d3a3-4643-82ff-c214d64ded07",
+        "587362a5-6a84-45d1-9b7c-c7a9d2d0a450",
+        "8ded20dd-aa49-4067-b7f0-753aa3024214",
+        "7734a060-c1f9-4797-a9fd-1ac1489db4df",
+        "0d2ba398-7bb1-463d-8d68-5cc9924ae7d7",
+        "e358c58d-65db-433a-a627-31afa4c32389"
+      ],
+      "description": "Analyzes every workbook row in batches and writes a Persian report on reviews, competitors, title, description and actions"
+    },
+    {
+      "id": "829bf397-83b2-4a1b-a48a-2f2f350c47d9",
+      "name": "Deliver both files",
+      "nodeIds": [
+        "18e133ce-6a35-4522-b517-1b7c38a71179",
+        "c0e24bb8-3525-434c-a227-d67af6fc9adf",
+        "b522c50f-051b-4032-bf36-30dd97731bb3",
+        "ce484f73-9ce7-4d43-b592-907d5d895722",
+        "637b739d-3726-4cf4-ba64-aef979927d1e",
+        "ff87123d-0ae3-4bdb-97f3-322cf873502f"
+      ],
+      "description": "Shows the report, turns it into a Word document, and hands back the untouched Excel file together with it"
+    }
+  ],
+  "id": "PEeeg4LqjBZNVISJ",
+  "tags": []
+}
