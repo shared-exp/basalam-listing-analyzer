@@ -4,7 +4,7 @@
 
 ## دسترسی آنلاین
 
-**[استفاده از ابزار تحلیل آگهی‌های باسلام](https://testtest007.app.n8n.cloud/form/basalam-product-research)**
+[استفاده از ابزار تحلیل آگهی‌های باسلام](https://testtest007.app.n8n.cloud/form/basalam-listing-analyzer)
 
 ## امکانات
 
